@@ -5,12 +5,15 @@ import { ThemeToggle } from '@/components/theme-toggler'
 import { AuthProvider } from '@/hooks/useAuth'
 import { AuthButton } from '@/components/auth-button'
 import { Metadata } from 'next'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { LayoutDashboard } from 'lucide-react'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Bitpulse - Crypto Data Hub',
-  description: 'crypto data hub',
+  description: 'Crypto data hub',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,10 +25,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="min-h-screen bg-background text-foreground">
               <header className="container mx-auto p-4">
                 <div className="flex justify-between items-center">
-                  <div className="w-10 h-10">
-                    <ThemeToggle />
+                  <div>
+                    <Link href="/dashboard">
+                      <Button variant="ghost" className="flex items-center space-x-2">
+                        <LayoutDashboard className="h-5 w-5" />
+                        <span>Dashboard</span>
+                      </Button>
+                    </Link>
                   </div>
-                  <div className="w-20 h-10 flex justify-end">
+                  <div className="flex items-center space-x-4">
+                    <ThemeToggle />
                     <AuthButton />
                   </div>
                 </div>
