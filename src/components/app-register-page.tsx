@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Check } from 'lucide-react'
 
 interface ErrorResponse {
   detail: string | { msg: string }[]
@@ -35,7 +35,10 @@ export function RegisterPage() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [passwordValid, setPasswordValid] = useState(false)
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    number: false,
+  })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -50,10 +53,13 @@ export function RegisterPage() {
   }
 
   useEffect(() => {
-    // Password validation: minimum 8 characters with at least one number
-    const passwordRegex = /^(?=.*[0-9])(?=.*[a-zA-Z]).{8,}$/
-    setPasswordValid(passwordRegex.test(formData.password))
+    setPasswordCriteria({
+      length: formData.password.length >= 8,
+      number: /\d/.test(formData.password),
+    })
   }, [formData.password])
+
+  const passwordValid = Object.values(passwordCriteria).every(Boolean)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -61,7 +67,7 @@ export function RegisterPage() {
     setIsLoading(true)
 
     if (!passwordValid) {
-      setError('Password must be at least 8 characters long and include a number')
+      setError('Password must meet all criteria')
       setIsLoading(false)
       return
     }
@@ -155,11 +161,16 @@ export function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
               />
-              {!passwordValid && formData.password && (
-                <p className="text-sm text-red-500">
-                  Password must be at least 8 characters long and include a number
-                </p>
-              )}
+              <ul className="space-y-1 text-sm">
+                <li className={`flex items-center ${passwordCriteria.length ? 'text-green-500' : 'text-gray-500'}`}>
+                  <Check className={`w-4 h-4 mr-2 ${passwordCriteria.length ? 'opacity-100' : 'opacity-0'}`} />
+                  At least 8 characters long
+                </li>
+                <li className={`flex items-center ${passwordCriteria.number ? 'text-green-500' : 'text-gray-500'}`}>
+                  <Check className={`w-4 h-4 mr-2 ${passwordCriteria.number ? 'opacity-100' : 'opacity-0'}`} />
+                  Includes a number
+                </li>
+              </ul>
             </div>
             <div className="space-y-2">
               <Label htmlFor="passwordConfirmation">Repeat Password</Label>
