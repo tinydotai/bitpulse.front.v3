@@ -17,6 +17,7 @@ interface AuthContextType {
   login: (formData: URLSearchParams) => Promise<void>
   logout: () => void
   isAuthenticated: boolean
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -24,28 +25,37 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      fetchUserData(token)
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token')
+      if (token && !authChecked) {
+        try {
+          const response = await axios.get<User>('http://localhost:8000/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          setUser(response.data)
+          setIsAuthenticated(true)
+        } catch (error) {
+          console.error('Failed to fetch user data:', error)
+          localStorage.removeItem('token')
+        } finally {
+          setIsLoading(false)
+          setAuthChecked(true)
+        }
+      } else {
+        setIsLoading(false)
+        setAuthChecked(true)
+      }
     }
-  }, [])
 
-  const fetchUserData = async (token: string) => {
-    try {
-      const response = await axios.get<User>('http://localhost:8000/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setUser(response.data)
-      setIsAuthenticated(true)
-    } catch (error) {
-      console.error('Failed to fetch user data:', error)
-      logout()
-    }
-  }
+    checkAuth()
+  }, [authChecked])
 
   const login = async (formData: URLSearchParams) => {
+    setIsLoading(true)
     try {
       const response = await axios.post('http://localhost:8000/jwt/login', formData, {
         headers: {
@@ -55,10 +65,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const token = response.data.access_token
       localStorage.setItem('token', token)
-      await fetchUserData(token)
+
+      const userResponse = await axios.get<User>('http://localhost:8000/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setUser(userResponse.data)
+      setIsAuthenticated(true)
     } catch (error) {
       console.error('Login failed:', error)
       throw error
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -66,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('token')
     setUser(null)
     setIsAuthenticated(false)
+    setAuthChecked(false)
   }
 
   const contextValue: AuthContextType = {
@@ -73,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     isAuthenticated,
+    isLoading,
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
