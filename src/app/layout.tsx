@@ -4,8 +4,14 @@ import { ThemeProvider } from './providers'
 import { ThemeToggle } from '@/components/theme-toggler'
 import { AuthProvider } from '@/hooks/useAuth'
 import { AuthButton } from '@/components/auth-button'
+import { Metadata } from 'next'
 
 const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'Bitpulse - Crypto Data Hub',
+  description: 'crypto data hub',
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
