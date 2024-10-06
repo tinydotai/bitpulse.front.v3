@@ -162,12 +162,28 @@ export function RegisterPage() {
                 className="w-full"
               />
               <ul className="space-y-1 text-sm">
-                <li className={`flex items-center ${passwordCriteria.length ? 'text-green-500' : 'text-muted-foreground'}`}>
-                  <Check className={`w-4 h-4 mr-2 ${passwordCriteria.length ? 'opacity-100' : 'opacity-0'}`} />
+                <li
+                  className={`flex items-center ${
+                    passwordCriteria.length ? 'text-green-500' : 'text-muted-foreground'
+                  }`}
+                >
+                  <Check
+                    className={`w-4 h-4 mr-2 ${
+                      passwordCriteria.length ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
                   At least 8 characters long
                 </li>
-                <li className={`flex items-center ${passwordCriteria.number ? 'text-green-500' : 'text-muted-foreground'}`}>
-                  <Check className={`w-4 h-4 mr-2 ${passwordCriteria.number ? 'opacity-100' : 'opacity-0'}`} />
+                <li
+                  className={`flex items-center ${
+                    passwordCriteria.number ? 'text-green-500' : 'text-muted-foreground'
+                  }`}
+                >
+                  <Check
+                    className={`w-4 h-4 mr-2 ${
+                      passwordCriteria.number ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
                   Includes a number
                 </li>
               </ul>
@@ -210,7 +226,7 @@ export function RegisterPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="text-blue-600 hover:underline">
               Log in
             </Link>
           </p>
