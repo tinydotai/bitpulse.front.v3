@@ -2,7 +2,7 @@ import '@/app/globals.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from './providers'
 import { ThemeToggle } from '@/components/theme-toggler'
-import { LogoutButton } from '@/components/logout-button'
+import { AuthButton } from '@/components/auth-button'
 import { AuthProvider } from '@/hooks/useAuth'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -14,17 +14,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <title>Bitpulse - Crypto Data Hub</title>
       </head>
       <body className={inter.className}>
-        <AuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
             <div className="min-h-screen bg-background text-foreground">
-              <header className="container mx-auto p-4 flex justify-between items-center">
-                <ThemeToggle />
-                <LogoutButton />
+              <header className="container mx-auto p-4">
+                <div className="flex justify-between items-center">
+                  <div className="w-10 h-10">
+                    <ThemeToggle />
+                  </div>
+                  <div className="w-20 h-10 flex justify-end">
+                    <AuthButton />
+                  </div>
+                </div>
               </header>
               <main className="container mx-auto p-4">{children}</main>
             </div>
-          </ThemeProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

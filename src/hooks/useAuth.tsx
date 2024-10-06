@@ -23,6 +23,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -37,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { Authorization: `Bearer ${token}` },
       })
       setUser(response.data)
+      setIsAuthenticated(true)
     } catch (error) {
       console.error('Failed to fetch user data:', error)
       logout()
@@ -63,13 +65,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('token')
     setUser(null)
+    setIsAuthenticated(false)
   }
 
   const contextValue: AuthContextType = {
     user,
     login,
     logout,
-    isAuthenticated: !!user,
+    isAuthenticated,
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
