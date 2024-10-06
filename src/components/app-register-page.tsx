@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import axios, { AxiosError } from 'axios'
 
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,7 @@ export function RegisterPage() {
     mobile: '',
   })
   const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -37,11 +39,13 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
+    setIsLoading(true)
 
     try {
-      const response = await axios.post('http://localhost:8000/jwt/register', formData, {
+      const formUrlEncoded = new URLSearchParams(formData).toString()
+      const response = await axios.post('http://localhost:8000/jwt/register', formUrlEncoded, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       })
 
@@ -49,19 +53,25 @@ export function RegisterPage() {
       router.push('/login') // Redirect to login page after successful registration
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        // Now TypeScript knows this is an AxiosError
-        const axiosError = error as AxiosError<{ detail: string }>
-        setError(axiosError.response?.data?.detail || 'Registration failed')
+        const axiosError = error as AxiosError<{ detail: { msg: string }[] }>
+        if (axiosError.response?.status === 422) {
+          // Handle validation errors
+          const validationErrors = axiosError.response.data.detail
+          const errorMessages = validationErrors.map(err => err.msg).join(', ')
+          setError(`Validation error: ${errorMessages}`)
+        } else {
+          setError(axiosError.response?.data?.detail?.[0]?.msg || 'Registration failed')
+        }
         console.error('Axios error:', axiosError.response?.data)
       } else if (error instanceof Error) {
-        // For other Error types
         setError(error.message || 'An unexpected error occurred')
         console.error('Unexpected error:', error)
       } else {
-        // For unknown error types
         setError('An unexpected error occurred')
         console.error('Unknown error:', error)
       }
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -147,17 +157,17 @@ export function RegisterPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <Button type="submit" className="w-full">
-              Register
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Registering...' : 'Register'}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <a href="/login" className="text-blue-600 hover:underline">
+            <Link href="/login" className="text-primary hover:underline">
               Log in
-            </a>
+            </Link>
           </p>
         </CardFooter>
       </Card>
