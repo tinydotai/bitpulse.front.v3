@@ -9,11 +9,13 @@ const inter = Inter({ subsets: ['latin'] })
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <title>Bitpulse - Crypto Data Hub</title>
+      <head>
+        <title>Bitpulse - Crypto Data Hub</title>
+      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="min-h-screen bg-background text-foreground">
-            <header className="container mx-auto p-4">
+            <header className="container mx-auto p-4 flex justify-between items-center">
               <ThemeToggle />
               <LogoutButton />
             </header>
