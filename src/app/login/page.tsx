@@ -1,11 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
-import axios from 'axios'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,12 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/hooks/useAuth'
-
-interface ValidationError {
-  loc: (string | number)[]
-  msg: string
-  type: string
-}
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -28,52 +20,53 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { login } = useAuth()
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
-    const formData = new URLSearchParams()
-    formData.append('username', username)
-    formData.append('password', password)
-    if (rememberMe) {
-      formData.append('grant_type', 'password')
-      formData.append('scope', '')
+    if (!username || !password) {
+      setError('Please fill in all fields')
+      setIsLoading(false)
+      return
     }
 
     try {
-      await login(formData)
-      router.push('/dashboard')
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          if (error.response.status === 401) {
-            setError(error.response.data.detail || 'Authentication failed')
-          } else if (error.response.status === 422 && Array.isArray(error.response.data.detail)) {
-            setError(error.response.data.detail.map((e: ValidationError) => e.msg).join(', '))
-          } else {
-            setError(error.response.data.detail || 'An error occurred during login')
-          }
-        } else if (error.request) {
-          setError('No response received from the server')
-        } else {
-          setError('An error occurred while setting up the request')
-        }
+      const success = await login(username, password)
+      if (success) {
+        router.push('/account')
       } else {
-        setError('An unexpected error occurred')
+        setError('Invalid username or password')
       }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('An unexpected error occurred. Please try again later.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (authLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (isAuthenticated) {
+    return null
   }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Bitpulse</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Login to Bitpulse</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -94,6 +87,7 @@ export default function LoginPage() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
+                  placeholder="Your password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
@@ -102,6 +96,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
