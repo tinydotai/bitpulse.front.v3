@@ -25,7 +25,7 @@ interface ErrorResponse {
   detail: string | { msg: string }[]
 }
 
-export function RegisterPage() {
+export default function RegisterPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
@@ -66,30 +66,20 @@ export function RegisterPage() {
     setError(null)
     setIsLoading(true)
 
-    if (!passwordValid) {
-      setError('Password must meet all criteria')
-      setIsLoading(false)
-      return
-    }
-
     if (formData.password !== passwordConfirmation) {
       setError("Passwords don't match")
       setIsLoading(false)
       return
     }
 
-    try {
-      const dataToSubmit = {
-        ...formData,
-        username: formData.email,
-      }
-      const formUrlEncoded = new URLSearchParams(dataToSubmit).toString()
-      const response = await axios.post('http://localhost:8000/jwt/register', formUrlEncoded, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      })
+    if (!passwordValid) {
+      setError('Password does not meet the required criteria')
+      setIsLoading(false)
+      return
+    }
 
+    try {
+      const response = await axios.post('http://localhost:8000/auth/register', formData)
       console.log('Registration successful:', response.data)
       router.push('/login')
     } catch (error: unknown) {
@@ -226,7 +216,7 @@ export function RegisterPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline">
+            <Link href="/login" className="text-primary hover:underline">
               Log in
             </Link>
           </p>

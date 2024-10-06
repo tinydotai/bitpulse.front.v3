@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
-export function LoginPage() {
+export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -48,12 +48,8 @@ export function LoginPage() {
         },
       })
 
-      // Assuming the API returns a token in the response
       const token = response.data.access_token
-      // Store the token in localStorage or a secure cookie
       localStorage.setItem('token', token)
-
-      // Redirect to dashboard on successful login
       router.push('/dashboard')
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -130,13 +126,13 @@ export function LoginPage() {
         <CardFooter className="flex flex-col space-y-2">
           <Link
             href="/forgot-password"
-            className="text-sm text-center text-blue-500 hover:underline"
+            className="text-sm text-center text-primary hover:underline"
           >
             Forgot your password?
           </Link>
           <div className="text-sm text-center">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-blue-500 hover:underline">
+            <Link href="/register" className="text-primary hover:underline">
               Sign up
             </Link>
           </div>
