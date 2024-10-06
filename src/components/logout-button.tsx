@@ -1,18 +1,23 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
 
 export function LogoutButton() {
+  const { logout, isAuthenticated } = useAuth()
   const router = useRouter()
 
   const handleLogout = () => {
-    // Clear the token from localStorage
-    localStorage.removeItem('token')
-
-    // Redirect to login page
+    logout()
     router.push('/login')
   }
 
-  return <Button onClick={handleLogout}>Logout</Button>
+  if (!isAuthenticated) return null
+
+  return (
+    <Button onClick={handleLogout} variant="ghost">
+      Logout
+    </Button>
+  )
 }

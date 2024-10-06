@@ -7,6 +7,7 @@ export default function DashboardPage() {
   useAuth() // This will redirect to login if not authenticated
   const user = useUser()
 
+  console.log(user)
   if (!user) return null // or a loading spinner
 
   return (

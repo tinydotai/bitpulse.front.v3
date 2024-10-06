@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import axios from 'axios'
 
@@ -12,6 +12,13 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuth } from '@/hooks/useAuth'
+
+interface ValidationError {
+  loc: (string | number)[]
+  msg: string
+  type: string
+}
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -21,17 +28,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
-
-    if (!username || !password) {
-      setError('Please fill in all fields')
-      setIsLoading(false)
-      return
-    }
 
     const formData = new URLSearchParams()
     formData.append('username', username)
@@ -42,18 +44,23 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await axios.post('http://localhost:8000/jwt/login', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      })
-
-      const token = response.data.access_token
-      localStorage.setItem('token', token)
+      await login(formData)
       router.push('/dashboard')
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        setError(error.response.data.detail || 'An error occurred during login')
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          if (error.response.status === 401) {
+            setError(error.response.data.detail || 'Authentication failed')
+          } else if (error.response.status === 422 && Array.isArray(error.response.data.detail)) {
+            setError(error.response.data.detail.map((e: ValidationError) => e.msg).join(', '))
+          } else {
+            setError(error.response.data.detail || 'An error occurred during login')
+          }
+        } else if (error.request) {
+          setError('No response received from the server')
+        } else {
+          setError('An error occurred while setting up the request')
+        }
       } else {
         setError('An unexpected error occurred')
       }
@@ -71,11 +78,11 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Your email"
+                placeholder="Your username"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 required
