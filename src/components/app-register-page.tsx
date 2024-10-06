@@ -22,11 +22,9 @@ import { AlertCircle } from 'lucide-react'
 export function RegisterPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
-    first_name: '',
-    last_name: '',
+    repeatPassword: '',
     mobile: '',
   })
   const [error, setError] = useState<string | null>(null)
@@ -41,8 +39,20 @@ export function RegisterPage() {
     setError(null)
     setIsLoading(true)
 
+    if (formData.password !== formData.repeatPassword) {
+      setError("Passwords don't match")
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const formUrlEncoded = new URLSearchParams(formData).toString()
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { repeatPassword, ...submitData } = formData
+      const dataToSubmit = {
+        ...submitData,
+        username: formData.email, // Set username as email
+      }
+      const formUrlEncoded = new URLSearchParams(dataToSubmit).toString()
       const response = await axios.post('http://localhost:8000/jwt/register', formUrlEncoded, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -85,17 +95,6 @@ export function RegisterPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -118,24 +117,13 @@ export function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="first_name">First Name</Label>
+              <Label htmlFor="repeatPassword">Repeat Password</Label>
               <Input
-                id="first_name"
-                name="first_name"
-                type="text"
+                id="repeatPassword"
+                name="repeatPassword"
+                type="password"
                 required
-                value={formData.first_name}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="last_name">Last Name</Label>
-              <Input
-                id="last_name"
-                name="last_name"
-                type="text"
-                required
-                value={formData.last_name}
+                value={formData.repeatPassword}
                 onChange={handleChange}
               />
             </div>
