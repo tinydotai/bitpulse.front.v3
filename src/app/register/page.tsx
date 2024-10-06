@@ -22,12 +22,22 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle, Check } from 'lucide-react'
 
 interface ErrorResponse {
-  detail: string | { msg: string }[]
+  detail: Array<{
+    loc: (string | number)[]
+    msg: string
+    type: string
+  }>
+}
+
+interface FormData {
+  email: string
+  password: string
+  mobile: string
 }
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
     mobile: '',
@@ -79,30 +89,34 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await axios.post('http://localhost:8000/auth/register', formData)
+      const response = await axios.post(
+        'http://localhost:8000/jwt/register',
+        { ...formData, username: formData.email },
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      )
       console.log('Registration successful:', response.data)
       router.push('/login')
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError<ErrorResponse>
-        if (axiosError.response?.status === 400) {
-          setError(
-            typeof axiosError.response.data.detail === 'string'
-              ? axiosError.response.data.detail
-              : 'Registration failed. Please check your input.'
-          )
-        } else if (axiosError.response?.status === 422) {
+        if (axiosError.response?.status === 422) {
           const validationErrors = axiosError.response.data.detail
           if (Array.isArray(validationErrors)) {
-            const errorMessages = validationErrors.map(err => err.msg).join(', ')
+            const errorMessages = validationErrors
+              .map(err => `${err.loc[1]}: ${err.msg}`)
+              .join(', ')
             setError(`Validation error: ${errorMessages}`)
           } else {
             setError('Validation failed. Please check your input.')
           }
         } else {
           setError(
-            typeof axiosError.response?.data?.detail === 'string'
-              ? axiosError.response.data.detail
+            typeof axiosError.response?.data === 'string'
+              ? axiosError.response.data
               : 'Registration failed'
           )
         }
@@ -217,7 +231,7 @@ export default function RegisterPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="text-primary text-blue-400 hover:underline">
+            <Link href="/login" className="text-primary hover:underline">
               Log in
             </Link>
           </p>
