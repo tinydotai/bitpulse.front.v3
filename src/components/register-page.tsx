@@ -81,7 +81,7 @@ export function RegisterPage() {
     try {
       const dataToSubmit = {
         ...formData,
-        username: formData.email, // Set username as email
+        username: formData.email,
       }
       const formUrlEncoded = new URLSearchParams(dataToSubmit).toString()
       const response = await axios.post('http://localhost:8000/jwt/register', formUrlEncoded, {
@@ -91,19 +91,17 @@ export function RegisterPage() {
       })
 
       console.log('Registration successful:', response.data)
-      router.push('/login') // Redirect to login page after successful registration
+      router.push('/login')
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError<ErrorResponse>
         if (axiosError.response?.status === 400) {
-          // Handle 400 Bad Request errors
           setError(
             typeof axiosError.response.data.detail === 'string'
               ? axiosError.response.data.detail
               : 'Registration failed. Please check your input.'
           )
         } else if (axiosError.response?.status === 422) {
-          // Handle validation errors
           const validationErrors = axiosError.response.data.detail
           if (Array.isArray(validationErrors)) {
             const errorMessages = validationErrors.map(err => err.msg).join(', ')
@@ -132,10 +130,10 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Register</CardTitle>
+          <CardTitle className="text-2xl font-bold">Register</CardTitle>
           <CardDescription>Create a new account to get started.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -149,6 +147,7 @@ export function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
+                className="w-full"
               />
             </div>
             <div className="space-y-2">
@@ -160,13 +159,14 @@ export function RegisterPage() {
                 required
                 value={formData.password}
                 onChange={handleChange}
+                className="w-full"
               />
               <ul className="space-y-1 text-sm">
-                <li className={`flex items-center ${passwordCriteria.length ? 'text-green-500' : 'text-gray-500'}`}>
+                <li className={`flex items-center ${passwordCriteria.length ? 'text-green-500' : 'text-muted-foreground'}`}>
                   <Check className={`w-4 h-4 mr-2 ${passwordCriteria.length ? 'opacity-100' : 'opacity-0'}`} />
                   At least 8 characters long
                 </li>
-                <li className={`flex items-center ${passwordCriteria.number ? 'text-green-500' : 'text-gray-500'}`}>
+                <li className={`flex items-center ${passwordCriteria.number ? 'text-green-500' : 'text-muted-foreground'}`}>
                   <Check className={`w-4 h-4 mr-2 ${passwordCriteria.number ? 'opacity-100' : 'opacity-0'}`} />
                   Includes a number
                 </li>
@@ -181,6 +181,7 @@ export function RegisterPage() {
                 required
                 value={passwordConfirmation}
                 onChange={handlePasswordConfirmationChange}
+                className="w-full"
               />
             </div>
             <div className="space-y-2">
