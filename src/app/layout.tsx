@@ -2,17 +2,14 @@ import '@/app/globals.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from './providers'
 import { ThemeToggle } from '@/components/theme-toggler'
-import { AuthButton } from '@/components/auth-button'
 import { AuthProvider } from '@/hooks/useAuth'
+import { AuthButton } from '@/components/auth-button'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>Bitpulse - Crypto Data Hub</title>
-      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>

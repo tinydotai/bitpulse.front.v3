@@ -28,14 +28,14 @@ interface EditedUser {
 
 export default function AccountPage() {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [editedUser, setEditedUser] = useState<EditedUser | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login')
     } else if (user) {
       setEditedUser({
@@ -45,7 +45,7 @@ export default function AccountPage() {
         newPassword: '',
       })
     }
-  }, [isAuthenticated, user, router])
+  }, [isAuthenticated, isLoading, user, router])
 
   const handleEdit = () => {
     setIsEditing(true)
@@ -99,8 +99,12 @@ export default function AccountPage() {
     }
   }
 
-  if (!isAuthenticated || !user || !editedUser) {
+  if (isLoading) {
     return <div>Loading...</div>
+  }
+
+  if (!isAuthenticated || !user || !editedUser) {
+    return null
   }
 
   return (
@@ -174,9 +178,9 @@ export default function AccountPage() {
             </Alert>
           )}
           {successMessage && (
-            <Alert variant="default" className="mt-4">
-              <CheckCircle2 className="h-4 w-4 mr-2 text-green-300" />
-              <AlertDescription className="text-green-100">{successMessage}</AlertDescription>
+            <Alert variant="default" className="mt-4 bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+              <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
             </Alert>
           )}
         </CardContent>
