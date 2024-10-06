@@ -128,13 +128,13 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col space-y-2">
           <Link
             href="/forgot-password"
-            className="text-sm text-blue-400 text-center text-primary hover:underline"
+            className="text-sm text-center text-primary hover:underline"
           >
             Forgot your password?
           </Link>
           <div className="text-sm text-center">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-primary text-blue-400 hover:underline">
+            <Link href="/register" className="text-primary hover:underline">
               Sign up
             </Link>
           </div>
