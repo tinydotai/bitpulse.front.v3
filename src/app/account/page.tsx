@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 
 interface EditedUser {
   email: string
@@ -33,6 +33,7 @@ export default function AccountPage() {
   const [editedUser, setEditedUser] = useState<EditedUser | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -51,6 +52,17 @@ export default function AccountPage() {
     setIsEditing(true)
     setError(null)
     setSuccessMessage(null)
+    setPasswordError(null)
+  }
+
+  const validatePassword = (password: string) => {
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long'
+    }
+    if (!/\d/.test(password)) {
+      return 'Password must contain at least 1 number'
+    }
+    return null
   }
 
   const handleSave = async () => {
@@ -58,6 +70,7 @@ export default function AccountPage() {
 
     setError(null)
     setSuccessMessage(null)
+    setPasswordError(null)
 
     try {
       // Update user info (email and mobile)
@@ -66,6 +79,12 @@ export default function AccountPage() {
 
       // Change password if new password is provided
       if (editedUser.currentPassword && editedUser.newPassword) {
+        const passwordValidationError = validatePassword(editedUser.newPassword)
+        if (passwordValidationError) {
+          setPasswordError(passwordValidationError)
+          return
+        }
+
         const formData = new URLSearchParams()
         formData.append('current_password', editedUser.currentPassword)
         formData.append('new_password', editedUser.newPassword)
@@ -169,16 +188,23 @@ export default function AccountPage() {
                     onChange={handleChange}
                   />
                 </div>
+                {passwordError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{passwordError}</AlertDescription>
+                  </Alert>
+                )}
               </>
             )}
           </div>
           {error && (
             <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           {successMessage && (
-            <Alert variant="default" className="mt-4 bg-green-50 border-green-200">
+            <Alert variant="default" className="mt-4">
               <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
               <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
             </Alert>
