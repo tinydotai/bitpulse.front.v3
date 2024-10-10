@@ -14,6 +14,7 @@ import {
 import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns'
 import { ArrowRight } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Transaction {
   _id: string
@@ -145,87 +146,93 @@ export function BigTransactionsTableComponent() {
           <div className="overflow-auto h-full custom-scrollbar">
             <Table>
               <TableBody>
-                {transactions.map(transaction => (
-                  <TableRow
-                    key={transaction._id}
-                    className={transaction.side === 'buy' ? 'text-green-500' : 'text-red-500'}
-                  >
-                    <TableCell className="w-[150px]">
-                      {getRelativeTime(transaction.timestamp)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
+                <AnimatePresence>
+                  {transactions.map((transaction, index) => (
+                    <motion.tr
+                      key={transaction._id}
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className={transaction.side === 'buy' ? 'text-green-500' : 'text-red-500'}
+                    >
+                      <TableCell className="w-[150px]">
+                        {getRelativeTime(transaction.timestamp)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Image
+                                  src={getCurrencyImage(transaction.baseCurrency)}
+                                  alt={transaction.baseCurrency}
+                                  width={24}
+                                  height={24}
+                                  onError={e => {
+                                    e.currentTarget.src = '/placeholder.svg?height=24&width=24'
+                                  }}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{transaction.baseCurrency}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <ArrowRight size={16} />
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Image
+                                  src={getCurrencyImage(transaction.quoteCurrency)}
+                                  alt={transaction.quoteCurrency}
+                                  width={24}
+                                  height={24}
+                                  onError={e => {
+                                    e.currentTarget.src = '/placeholder.svg?height=24&width=24'
+                                  }}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{transaction.quoteCurrency}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
+                      <TableCell>{transaction.side.toUpperCase()}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatNumber(transaction.price)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatNumber(transaction.quantity, 4)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(transaction.value)}
+                      </TableCell>
+                      <TableCell>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger>
                               <Image
-                                src={getCurrencyImage(transaction.baseCurrency)}
-                                alt={transaction.baseCurrency}
-                                width={24}
-                                height={24}
+                                src={getBrokerImage(transaction.source)}
+                                alt={transaction.source}
+                                width={34}
+                                height={34}
                                 onError={e => {
                                   e.currentTarget.src = '/placeholder.svg?height=24&width=24'
                                 }}
                               />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>{transaction.baseCurrency}</p>
+                              <p>{transaction.source}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                        <ArrowRight size={16} />
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Image
-                                src={getCurrencyImage(transaction.quoteCurrency)}
-                                alt={transaction.quoteCurrency}
-                                width={24}
-                                height={24}
-                                onError={e => {
-                                  e.currentTarget.src = '/placeholder.svg?height=24&width=24'
-                                }}
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{transaction.quoteCurrency}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </TableCell>
-                    <TableCell>{transaction.side.toUpperCase()}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatNumber(transaction.price)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatNumber(transaction.quantity, 4)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(transaction.value)}
-                    </TableCell>
-                    <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Image
-                              src={getBrokerImage(transaction.source)}
-                              alt={transaction.source}
-                              width={34}
-                              height={34}
-                              onError={e => {
-                                e.currentTarget.src = '/placeholder.svg?height=24&width=24'
-                              }}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{transaction.source}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </TableBody>
             </Table>
           </div>
