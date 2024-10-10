@@ -133,16 +133,15 @@ export function BigTransactionsTableComponent() {
             <Table>
               <TableBody>
                 {transactions.map(transaction => (
-                  <TableRow key={transaction._id}>
+                  <TableRow
+                    key={transaction._id}
+                    className={transaction.side === 'buy' ? 'text-green-500' : 'text-red-500'}
+                  >
                     <TableCell className="w-[150px]">
                       {getRelativeTime(transaction.timestamp)}
                     </TableCell>
                     <TableCell>{transaction.symbol}</TableCell>
-                    <TableCell
-                      className={transaction.side === 'buy' ? 'text-green-600' : 'text-red-600'}
-                    >
-                      {transaction.side.toUpperCase()}
-                    </TableCell>
+                    <TableCell>{transaction.side.toUpperCase()}</TableCell>
                     <TableCell className="text-right font-mono">
                       {formatNumber(transaction.price)}
                     </TableCell>
