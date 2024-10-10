@@ -25,6 +25,7 @@ interface Transaction {
 export function BigTransactionsTableComponent() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const ws = useRef<WebSocket | null>(null)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     // Replace with your actual WebSocket server URL
@@ -32,8 +33,15 @@ export function BigTransactionsTableComponent() {
 
     ws.current.onopen = () => {
       console.log('WebSocket connection established')
-      // Send any message to request an update
+      // Send initial message
       ws.current?.send('Request update')
+
+      // Set up interval to send message every 5 seconds
+      intervalRef.current = setInterval(() => {
+        if (ws.current?.readyState === WebSocket.OPEN) {
+          ws.current.send('Request update')
+        }
+      }, 5000)
     }
 
     ws.current.onmessage = event => {
@@ -51,9 +59,17 @@ export function BigTransactionsTableComponent() {
 
     ws.current.onclose = () => {
       console.log('WebSocket connection closed')
+      // Clear the interval when the connection is closed
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
     }
 
     return () => {
+      // Clear the interval and close the WebSocket when the component unmounts
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
       ws.current?.close()
     }
   }, [])

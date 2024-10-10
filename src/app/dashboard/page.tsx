@@ -1,10 +1,10 @@
-'use client'
 import { BigTransactionsTableComponent } from '@/components/big-transactions-table'
 
-export default function DashboardPage() {
+export default function Dashboard() {
   return (
-    <div className="container mx-auto p-4">
-      Hello on Dashboard <BigTransactionsTableComponent />
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <BigTransactionsTableComponent />
     </div>
   )
 }
