@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -109,6 +110,11 @@ export function BigTransactionsTableComponent() {
     }
   }
 
+  const getSymbolImage = (symbol: string) => {
+    const baseCurrency = symbol.replace('USDT', '')
+    return `/pairs/${baseCurrency}.png`
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -140,7 +146,20 @@ export function BigTransactionsTableComponent() {
                     <TableCell className="w-[150px]">
                       {getRelativeTime(transaction.timestamp)}
                     </TableCell>
-                    <TableCell>{transaction.symbol}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Image
+                          src={getSymbolImage(transaction.symbol)}
+                          alt={transaction.symbol}
+                          width={24}
+                          height={24}
+                          onError={e => {
+                            e.currentTarget.src = '/placeholder.svg?height=24&width=24'
+                          }}
+                        />
+                        <span>{transaction.symbol}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{transaction.side.toUpperCase()}</TableCell>
                     <TableCell className="text-right font-mono">
                       {formatNumber(transaction.price)}
