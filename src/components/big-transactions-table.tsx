@@ -12,11 +12,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns'
+import { ArrowRight } from 'lucide-react'
 
 interface Transaction {
   _id: string
   timestamp: string
   symbol: string
+  baseCurrency: string
+  quoteCurrency: string
   side: 'buy' | 'sell'
   price: number
   quantity: number
@@ -110,9 +113,8 @@ export function BigTransactionsTableComponent() {
     }
   }
 
-  const getSymbolImage = (symbol: string) => {
-    const baseCurrency = symbol.replace('USDT', '')
-    return `/pairs/${baseCurrency}.png`
+  const getCurrencyImage = (currency: string) => {
+    return `/pairs/${currency}.png`
   }
 
   return (
@@ -149,15 +151,27 @@ export function BigTransactionsTableComponent() {
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Image
-                          src={getSymbolImage(transaction.symbol)}
-                          alt={transaction.symbol}
+                          src={getCurrencyImage(transaction.baseCurrency)}
+                          alt={transaction.baseCurrency}
                           width={24}
                           height={24}
                           onError={e => {
                             e.currentTarget.src = '/placeholder.svg?height=24&width=24'
                           }}
                         />
-                        <span>{transaction.symbol}</span>
+                        <ArrowRight size={16} />
+                        <Image
+                          src={getCurrencyImage(transaction.quoteCurrency)}
+                          alt={transaction.quoteCurrency}
+                          width={24}
+                          height={24}
+                          onError={e => {
+                            e.currentTarget.src = '/placeholder.svg?height=24&width=24'
+                          }}
+                        />
+                        <span>
+                          {transaction.baseCurrency} - {transaction.quoteCurrency}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>{transaction.side.toUpperCase()}</TableCell>
