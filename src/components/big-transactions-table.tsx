@@ -155,25 +155,43 @@ export function BigTransactionsTableComponent() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Image
-                          src={getCurrencyImage(transaction.baseCurrency)}
-                          alt={transaction.baseCurrency}
-                          width={24}
-                          height={24}
-                          onError={e => {
-                            e.currentTarget.src = '/placeholder.svg?height=24&width=24'
-                          }}
-                        />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Image
+                                src={getCurrencyImage(transaction.baseCurrency)}
+                                alt={transaction.baseCurrency}
+                                width={24}
+                                height={24}
+                                onError={e => {
+                                  e.currentTarget.src = '/placeholder.svg?height=24&width=24'
+                                }}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{transaction.baseCurrency}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <ArrowRight size={16} />
-                        <Image
-                          src={getCurrencyImage(transaction.quoteCurrency)}
-                          alt={transaction.quoteCurrency}
-                          width={24}
-                          height={24}
-                          onError={e => {
-                            e.currentTarget.src = '/placeholder.svg?height=24&width=24'
-                          }}
-                        />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Image
+                                src={getCurrencyImage(transaction.quoteCurrency)}
+                                alt={transaction.quoteCurrency}
+                                width={24}
+                                height={24}
+                                onError={e => {
+                                  e.currentTarget.src = '/placeholder.svg?height=24&width=24'
+                                }}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{transaction.quoteCurrency}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </TableCell>
                     <TableCell>{transaction.side.toUpperCase()}</TableCell>
@@ -193,8 +211,8 @@ export function BigTransactionsTableComponent() {
                             <Image
                               src={getBrokerImage(transaction.source)}
                               alt={transaction.source}
-                              width={24}
-                              height={24}
+                              width={34}
+                              height={34}
                               onError={e => {
                                 e.currentTarget.src = '/placeholder.svg?height=24&width=24'
                               }}
