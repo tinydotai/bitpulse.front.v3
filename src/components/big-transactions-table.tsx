@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns'
 
 interface Transaction {
   _id: string
@@ -50,9 +50,9 @@ export function BigTransactionsTableComponent() {
         const uniqueTransactions = updatedTransactions.filter(
           (transaction, index, self) => index === self.findIndex(t => t._id === transaction._id)
         )
-        return uniqueTransactions.sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        )
+        return uniqueTransactions
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 200) // Keep only the last 200 elements
       })
     }
 
@@ -82,7 +82,31 @@ export function BigTransactionsTableComponent() {
   }, [])
 
   const getRelativeTime = (timestamp: string) => {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true })
+    const date = new Date(timestamp)
+    const now = new Date()
+    const secondsAgo = differenceInSeconds(now, date)
+
+    if (secondsAgo < 60) {
+      return `${secondsAgo} second${secondsAgo !== 1 ? 's' : ''} ago`
+    }
+
+    return formatDistanceToNowStrict(date, { addSuffix: true })
+  }
+
+  const formatNumber = (num: number, decimals: number = 2) => {
+    const parts = num.toFixed(decimals).split('.')
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return parts.join('.')
+  }
+
+  const formatCurrency = (num: number) => {
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(2)}M`
+    } else if (num >= 1000) {
+      return `$${(num / 1000).toFixed(2)}K`
+    } else {
+      return `$${num.toFixed(2)}`
+    }
   }
 
   return (
@@ -91,36 +115,50 @@ export function BigTransactionsTableComponent() {
         <CardTitle>Big Transactions</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Time</TableHead>
-              <TableHead>Symbol</TableHead>
-              <TableHead>Side</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Source</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map(transaction => (
-              <TableRow key={transaction._id}>
-                <TableCell>{getRelativeTime(transaction.timestamp)}</TableCell>
-                <TableCell>{transaction.symbol}</TableCell>
-                <TableCell
-                  className={transaction.side === 'buy' ? 'text-green-600' : 'text-red-600'}
-                >
-                  {transaction.side.toUpperCase()}
-                </TableCell>
-                <TableCell>{transaction.price.toFixed(2)}</TableCell>
-                <TableCell>{transaction.quantity.toFixed(2)}</TableCell>
-                <TableCell>{transaction.value.toFixed(2)}</TableCell>
-                <TableCell>{transaction.source}</TableCell>
+        <div className="relative overflow-hidden" style={{ height: '400px' }}>
+          <Table>
+            <TableHeader className="sticky top-0 bg-background z-10">
+              <TableRow>
+                <TableHead className="w-[150px]">Time</TableHead>
+                <TableHead>Symbol</TableHead>
+                <TableHead>Side</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Value</TableHead>
+                <TableHead>Source</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+          </Table>
+          <div className="overflow-auto h-full custom-scrollbar">
+            <Table>
+              <TableBody>
+                {transactions.map(transaction => (
+                  <TableRow key={transaction._id}>
+                    <TableCell className="w-[150px]">
+                      {getRelativeTime(transaction.timestamp)}
+                    </TableCell>
+                    <TableCell>{transaction.symbol}</TableCell>
+                    <TableCell
+                      className={transaction.side === 'buy' ? 'text-green-600' : 'text-red-600'}
+                    >
+                      {transaction.side.toUpperCase()}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatNumber(transaction.price)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatNumber(transaction.quantity, 4)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(transaction.value)}
+                    </TableCell>
+                    <TableCell>{transaction.source}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
