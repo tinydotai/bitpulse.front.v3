@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table'
 import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns'
 import { ArrowRight } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface Transaction {
   _id: string
@@ -117,6 +118,10 @@ export function BigTransactionsTableComponent() {
     return `/pairs/${currency}.png`
   }
 
+  const getBrokerImage = (broker: string) => {
+    return `/brokers/${broker}.png`
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -133,7 +138,7 @@ export function BigTransactionsTableComponent() {
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
                 <TableHead className="text-right">Value</TableHead>
-                <TableHead>Source</TableHead>
+                <TableHead>Broker</TableHead>
               </TableRow>
             </TableHeader>
           </Table>
@@ -169,9 +174,6 @@ export function BigTransactionsTableComponent() {
                             e.currentTarget.src = '/placeholder.svg?height=24&width=24'
                           }}
                         />
-                        <span>
-                          {transaction.baseCurrency} - {transaction.quoteCurrency}
-                        </span>
                       </div>
                     </TableCell>
                     <TableCell>{transaction.side.toUpperCase()}</TableCell>
@@ -184,7 +186,26 @@ export function BigTransactionsTableComponent() {
                     <TableCell className="text-right font-mono">
                       {formatCurrency(transaction.value)}
                     </TableCell>
-                    <TableCell>{transaction.source}</TableCell>
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Image
+                              src={getBrokerImage(transaction.source)}
+                              alt={transaction.source}
+                              width={24}
+                              height={24}
+                              onError={e => {
+                                e.currentTarget.src = '/placeholder.svg?height=24&width=24'
+                              }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{transaction.source}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
