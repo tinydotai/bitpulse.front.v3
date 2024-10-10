@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { formatDistanceToNow } from 'date-fns'
 
 interface Transaction {
   _id: string
@@ -24,19 +25,17 @@ interface Transaction {
 
 export function BigTransactionsTableComponent() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [, setUpdateTrigger] = useState(0)
   const ws = useRef<WebSocket | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    // Replace with your actual WebSocket server URL
     ws.current = new WebSocket('ws://localhost:8000/whales/ws/big_transactions')
 
     ws.current.onopen = () => {
       console.log('WebSocket connection established')
-      // Send initial message
       ws.current?.send('Request update')
 
-      // Set up interval to send message every 5 seconds
       intervalRef.current = setInterval(() => {
         if (ws.current?.readyState === WebSocket.OPEN) {
           ws.current.send('Request update')
@@ -48,8 +47,12 @@ export function BigTransactionsTableComponent() {
       const newTransactions = JSON.parse(event.data)
       setTransactions(prevTransactions => {
         const updatedTransactions = [...newTransactions, ...prevTransactions]
-        // Keep only the latest 10 transactions
-        return updatedTransactions.slice(0, 10)
+        const uniqueTransactions = updatedTransactions.filter(
+          (transaction, index, self) => index === self.findIndex(t => t._id === transaction._id)
+        )
+        return uniqueTransactions.sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )
       })
     }
 
@@ -59,23 +62,27 @@ export function BigTransactionsTableComponent() {
 
     ws.current.onclose = () => {
       console.log('WebSocket connection closed')
-      // Clear the interval when the connection is closed
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
     }
 
+    // Set up interval to update relative times every second
+    const updateInterval = setInterval(() => {
+      setUpdateTrigger(prev => prev + 1)
+    }, 1000)
+
     return () => {
-      // Clear the interval and close the WebSocket when the component unmounts
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
+      clearInterval(updateInterval)
       ws.current?.close()
     }
   }, [])
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
+  const getRelativeTime = (timestamp: string) => {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true })
   }
 
   return (
@@ -99,7 +106,7 @@ export function BigTransactionsTableComponent() {
           <TableBody>
             {transactions.map(transaction => (
               <TableRow key={transaction._id}>
-                <TableCell>{formatDate(transaction.timestamp)}</TableCell>
+                <TableCell>{getRelativeTime(transaction.timestamp)}</TableCell>
                 <TableCell>{transaction.symbol}</TableCell>
                 <TableCell
                   className={transaction.side === 'buy' ? 'text-green-600' : 'text-red-600'}
