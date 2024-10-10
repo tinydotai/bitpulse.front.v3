@@ -93,7 +93,7 @@ export function BigTransactionsTableComponent() {
     const secondsAgo = differenceInSeconds(now, date)
 
     if (secondsAgo < 60) {
-      return `${secondsAgo} second${secondsAgo !== 1 ? 's' : ''} ago`
+      return `${secondsAgo}s`
     }
 
     return formatDistanceToNowStrict(date, { addSuffix: true })
@@ -133,13 +133,13 @@ export function BigTransactionsTableComponent() {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="w-[150px]">Time</TableHead>
+                <TableHead className="w-[100px] md:w-[150px]">Time</TableHead>
                 <TableHead>Symbol</TableHead>
-                <TableHead>Side</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="hidden md:table-cell">Side</TableHead>
+                <TableHead className="hidden md:table-cell text-right">Price</TableHead>
+                <TableHead className="hidden md:table-cell text-right">Quantity</TableHead>
                 <TableHead className="text-right">Value</TableHead>
-                <TableHead>Broker</TableHead>
+                <TableHead className="hidden md:table-cell">Broker</TableHead>
               </TableRow>
             </TableHeader>
           </Table>
@@ -156,14 +156,14 @@ export function BigTransactionsTableComponent() {
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       className={transaction.side === 'buy' ? 'text-green-500' : 'text-red-500'}
                     >
-                      <TableCell className="w-[150px]">
+                      <TableCell className="w-[100px] md:w-[150px]">
                         {getRelativeTime(transaction.timestamp)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <TooltipProvider>
                             <Tooltip>
-                              <TooltipTrigger>
+                              <TooltipTrigger asChild>
                                 <Image
                                   src={getCurrencyImage(transaction.baseCurrency)}
                                   alt={transaction.baseCurrency}
@@ -182,7 +182,7 @@ export function BigTransactionsTableComponent() {
                           <ArrowRight size={16} />
                           <TooltipProvider>
                             <Tooltip>
-                              <TooltipTrigger>
+                              <TooltipTrigger asChild>
                                 <Image
                                   src={getCurrencyImage(transaction.quoteCurrency)}
                                   alt={transaction.quoteCurrency}
@@ -200,20 +200,22 @@ export function BigTransactionsTableComponent() {
                           </TooltipProvider>
                         </div>
                       </TableCell>
-                      <TableCell>{transaction.side.toUpperCase()}</TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="hidden md:table-cell">
+                        {transaction.side.toUpperCase()}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-right font-mono">
                         {formatNumber(transaction.price)}
                       </TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="hidden md:table-cell text-right font-mono">
                         {formatNumber(transaction.quantity, 4)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {formatCurrency(transaction.value)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <TooltipProvider>
                           <Tooltip>
-                            <TooltipTrigger>
+                            <TooltipTrigger asChild>
                               <Image
                                 src={getBrokerImage(transaction.source)}
                                 alt={transaction.source}
