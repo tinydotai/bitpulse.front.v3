@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import {
-  LineChart,
+  ComposedChart,
+  Bar,
   Line,
   XAxis,
   YAxis,
@@ -73,7 +74,7 @@ export default function LiveBTCUSDTChart() {
     const prices = data.map(d => d.price)
     const minPrice = Math.min(...prices)
     const maxPrice = Math.max(...prices)
-    return [minPrice * 0.999, maxPrice * 1.001] // 1% padding on both sides
+    return [minPrice * 0.999, maxPrice * 1.001] // 10% padding on both sides
   }
 
   return (
@@ -81,7 +82,7 @@ export default function LiveBTCUSDTChart() {
       <h2 className="text-white text-2xl mb-4">Live BTCUSDT Chart</h2>
       <p className="text-white mb-2">Status: {isConnected ? 'Connected' : 'Disconnected'}</p>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#444" />
           <XAxis
             dataKey="timestamp"
@@ -107,34 +108,18 @@ export default function LiveBTCUSDTChart() {
             }
           />
           <Legend />
+          <Bar dataKey="totalBuyValue" fill="#00ff00" yAxisId="left" name="Total Buy Value" />
+          <Bar dataKey="totalSellValue" fill="#ff0000" yAxisId="left" name="Total Sell Value" />
           <Line
             type="monotone"
             dataKey="price"
-            stroke="#00ff00"
-            dot={false}
-            strokeWidth={2}
-            name="Price"
-            yAxisId="right"
-          />
-          <Line
-            type="monotone"
-            dataKey="totalBuyValue"
             stroke="#0000ff"
             dot={false}
             strokeWidth={2}
-            name="Total Buy Value"
-            yAxisId="left"
+            yAxisId="right"
+            name="Price"
           />
-          <Line
-            type="monotone"
-            dataKey="totalSellValue"
-            stroke="#ffff00"
-            dot={false}
-            strokeWidth={2}
-            name="Total Sell Value"
-            yAxisId="left"
-          />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
