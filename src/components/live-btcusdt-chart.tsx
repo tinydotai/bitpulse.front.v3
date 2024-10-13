@@ -68,6 +68,14 @@ export default function LiveBTCUSDTChart() {
     return value.toLocaleString('en-US', { maximumFractionDigits: 0 })
   }
 
+  const calculatePriceDomain = () => {
+    if (data.length === 0) return [0, 100000] // Default range if no data
+    const prices = data.map(d => d.price)
+    const minPrice = Math.min(...prices)
+    const maxPrice = Math.max(...prices)
+    return [minPrice * 0.999, maxPrice * 1.001] // 1% padding on both sides
+  }
+
   return (
     <div className="w-full h-[500px] bg-gray-900 p-4">
       <h2 className="text-white text-2xl mb-4">Live BTCUSDT Chart</h2>
@@ -88,6 +96,7 @@ export default function LiveBTCUSDTChart() {
             stroke="#888"
             tick={{ fill: '#888' }}
             tickFormatter={formatYAxis}
+            domain={calculatePriceDomain()}
           />
           <Tooltip
             contentStyle={{ backgroundColor: '#333', border: 'none' }}
