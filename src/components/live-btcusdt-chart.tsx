@@ -54,7 +54,18 @@ export default function LiveBTCUSDTChart() {
       setIsConnected(false)
     }
 
+    // Function to send update request
+    const sendUpdateRequest = () => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify({ action: 'update' }))
+      }
+    }
+
+    // Set up interval to send update requests every 10 seconds
+    const intervalId = setInterval(sendUpdateRequest, 10000)
+
     return () => {
+      clearInterval(intervalId)
       if (ws.current) {
         ws.current.close()
       }
@@ -74,7 +85,7 @@ export default function LiveBTCUSDTChart() {
     const prices = data.map(d => d.price)
     const minPrice = Math.min(...prices)
     const maxPrice = Math.max(...prices)
-    return [minPrice * 0.999, maxPrice * 1.001] // 10% padding on both sides
+    return [minPrice * 0.999, maxPrice * 1.001] // 0.1% padding on both sides
   }
 
   return (
