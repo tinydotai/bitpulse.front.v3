@@ -71,7 +71,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
     if (value >= 1) {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
     } else if (value >= 0.01) {
-      return `$${value.toFixed(3)}`
+      return `$${value.toFixed(5)}`
     } else if (value >= 0.0001) {
       return `$${value.toFixed(7)}`
     } else {
