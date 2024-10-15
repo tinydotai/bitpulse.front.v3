@@ -153,6 +153,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
     <Card className="w-full bg-background">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
+          <CardTitle className="text-2xl font-bold">Buy/Sell Volumes</CardTitle>
           <span className="text-sm font-normal">
             {isConnected ? (
               <Wifi className="inline-block text-green-500 w-4 h-4 mr-1" />
