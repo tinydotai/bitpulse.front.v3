@@ -30,8 +30,16 @@ export default function Component() {
 
   const addDataPoint = useCallback((newDataPoint: DataPoint) => {
     setData(prevData => {
-      const newData = [...prevData, newDataPoint].slice(-60)
-      return newData
+      const existingIndex = prevData.findIndex(point => point.timestamp === newDataPoint.timestamp)
+      if (existingIndex !== -1) {
+        // If a data point with the same timestamp exists, update it
+        const updatedData = [...prevData]
+        updatedData[existingIndex] = newDataPoint
+        return updatedData.slice(-60) // Keep only the last 60 data points
+      } else {
+        // If it's a new data point, add it to the array
+        return [...prevData, newDataPoint].slice(-60) // Keep only the last 60 data points
+      }
     })
   }, [])
 
