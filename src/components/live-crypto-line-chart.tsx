@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import {
   ComposedChart,
   Bar,
@@ -14,6 +14,13 @@ import {
 } from 'recharts'
 import { Wifi, WifiOff } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type DataPoint = {
   timestamp: string
@@ -35,9 +42,14 @@ interface LiveCryptoChartProps {
   cryptoPair: string
 }
 
+const INTERVALS = [1, 10, 30, 60]
+const DEFAULT_INTERVAL = 60
+
 export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProps) {
   const [data, setData] = useState<DataPoint[]>([])
   const [isConnected, setIsConnected] = useState(false)
+  const intervalRef = useRef(DEFAULT_INTERVAL)
+  const [intervalState, setIntervalState] = useState(DEFAULT_INTERVAL)
   const ws = useRef<WebSocket | null>(null)
   const pingInterval = useRef<NodeJS.Timeout | null>(null)
   const pingTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -93,7 +105,10 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
       ws.current.close()
     }
 
-    ws.current = new WebSocket(`ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}`)
+    console.log(`Connecting WebSocket with interval: ${intervalRef.current}`)
+    ws.current = new WebSocket(
+      `ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}`
+    )
 
     ws.current.onopen = () => {
       console.log('WebSocket connected')
@@ -130,6 +145,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
   }, [addDataPoint, heartbeat, cryptoPair])
 
   useEffect(() => {
+    console.log(`Effect running with interval: ${intervalRef.current}`)
     connectWebSocket()
 
     pingInterval.current = setInterval(() => {
@@ -149,11 +165,36 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
     return tickItem
   }, [])
 
+  const handleIntervalChange = (newInterval: string) => {
+    const parsedInterval = parseInt(newInterval)
+    if (INTERVALS.includes(parsedInterval)) {
+      console.log(`Changing interval to: ${parsedInterval}`)
+      intervalRef.current = parsedInterval
+      setIntervalState(parsedInterval)
+      setData([]) // Clear existing data when interval changes
+      connectWebSocket() // Reconnect with new interval
+    }
+  }
+
   return (
     <Card className="w-full bg-background">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold">Buy/Sell Volumes</CardTitle>
+          <div className="flex items-center space-x-4">
+            <span className="text-2xl font-bold">Buy/Sell Volumes</span>
+            <Select value={intervalState.toString()} onValueChange={handleIntervalChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select interval" />
+              </SelectTrigger>
+              <SelectContent>
+                {INTERVALS.map(i => (
+                  <SelectItem key={i} value={i.toString()}>
+                    {i} second{i !== 1 ? 's' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <span className="text-sm font-normal">
             {isConnected ? (
               <Wifi className="inline-block text-green-500 w-4 h-4 mr-1" />
