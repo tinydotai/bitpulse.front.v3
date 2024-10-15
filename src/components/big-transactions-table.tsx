@@ -36,7 +36,7 @@ export function BigTransactionsTableComponent() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    ws.current = new WebSocket('ws://localhost:8000/whales/ws/big_transactions')
+    ws.current = new WebSocket('ws://localhost:8000/whales/ws/big_transactions/ETHUSDT')
 
     ws.current.onopen = () => {
       console.log('WebSocket connection established')
