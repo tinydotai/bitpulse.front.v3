@@ -73,7 +73,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
     } else if (value >= 0.01) {
       return `$${value.toFixed(3)}`
     } else if (value >= 0.0001) {
-      return `$${value.toFixed(5)}`
+      return `$${value.toFixed(7)}`
     } else {
       return `$${value.toExponential(2)}`
     }
