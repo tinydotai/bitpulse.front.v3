@@ -28,6 +28,7 @@ interface WebSocketMessage {
   sell_avg_price: number
   buy_total_value: number
   sell_total_value: number
+  avg_price: number
 }
 
 interface LiveCryptoChartProps {
@@ -108,7 +109,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
         message.forEach((item: WebSocketMessage) => {
           const newDataPoint = {
             timestamp: new Date(item.timestamp).toLocaleTimeString('en-US', { hour12: false }),
-            price: (item.buy_avg_price + item.sell_avg_price) / 2,
+            price: item.avg_price,
             totalBuyValue: item.buy_total_value,
             totalSellValue: item.sell_total_value,
           }
