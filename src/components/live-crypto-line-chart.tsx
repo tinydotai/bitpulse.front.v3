@@ -29,7 +29,11 @@ interface WebSocketMessage {
   sell_total_value: number
 }
 
-export default function Component() {
+interface LiveCryptoChartProps {
+  cryptoPair: string
+}
+
+export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProps) {
   const [data, setData] = useState<DataPoint[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const ws = useRef<WebSocket | null>(null)
@@ -78,7 +82,7 @@ export default function Component() {
       ws.current.close()
     }
 
-    ws.current = new WebSocket('ws://localhost:8000/stats/ws/transaction_stats/BTCUSDT')
+    ws.current = new WebSocket(`ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}`)
 
     ws.current.onopen = () => {
       console.log('WebSocket connected')
@@ -112,7 +116,7 @@ export default function Component() {
       console.error('WebSocket error:', error)
       setIsConnected(false)
     }
-  }, [addDataPoint, heartbeat])
+  }, [addDataPoint, heartbeat, cryptoPair])
 
   useEffect(() => {
     connectWebSocket()
@@ -137,7 +141,7 @@ export default function Component() {
   return (
     <div className="w-full h-[500px] bg-[#0f172a] p-4 rounded-lg">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-white">Live BTCUSDT Chart</h2>
+        <h2 className="text-2xl font-bold text-white">Live {cryptoPair} Chart</h2>
         <div className="flex items-center">
           {isConnected ? (
             <Wifi className="text-green-500 w-6 h-6" aria-label="Connected" />
