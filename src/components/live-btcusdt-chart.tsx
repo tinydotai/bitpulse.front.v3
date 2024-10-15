@@ -160,8 +160,20 @@ export default function LiveBTCUSDTChart() {
               tickFormatter={formatXAxis}
               minTickGap={50}
             />
-            <YAxis yAxisId="left" stroke="#888" tick={{ fill: '#888' }} />
-            <YAxis yAxisId="right" orientation="right" stroke="#888" tick={{ fill: '#888' }} />
+            <YAxis
+              yAxisId="left"
+              stroke="#888"
+              tick={{ fill: '#888' }}
+              label={{ value: 'Total Value', angle: -90, position: 'insideLeft', fill: '#888' }}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="#4299e1"
+              tick={{ fill: '#4299e1' }}
+              label={{ value: 'Price', angle: 90, position: 'insideRight', fill: '#4299e1' }}
+              domain={['auto', 'auto']}
+            />
             <Tooltip
               contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #2d3748' }}
               labelStyle={{ color: '#888' }}
