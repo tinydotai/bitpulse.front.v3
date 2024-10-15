@@ -53,6 +53,17 @@ export default function LiveBTCUSDTChart() {
     [data.length]
   )
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+  }
+
+  const formatTooltipValue = (value: number, name: string) => {
+    if (name === 'Price') {
+      return [formatCurrency(value), name]
+    }
+    return [formatCurrency(value), name]
+  }
+
   useEffect(() => {
     ws.current = new WebSocket('ws://localhost:8000/stats/ws/transaction_stats/BTCUSDT')
 
@@ -150,7 +161,7 @@ export default function LiveBTCUSDTChart() {
           <ComposedChart
             data={visibleData}
             ref={chartRef}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 20, right: 60, left: 60, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
             <XAxis
@@ -164,22 +175,37 @@ export default function LiveBTCUSDTChart() {
               yAxisId="left"
               stroke="#888"
               tick={{ fill: '#888' }}
-              label={{ value: 'Total Value', angle: -90, position: 'insideLeft', fill: '#888' }}
+              tickFormatter={value => formatCurrency(value)}
+              label={{
+                value: '',
+                angle: -90,
+                position: 'insideLeft',
+                fill: '#888',
+                offset: -45,
+              }}
             />
             <YAxis
               yAxisId="right"
               orientation="right"
               stroke="#4299e1"
               tick={{ fill: '#4299e1' }}
-              label={{ value: 'Price', angle: 90, position: 'insideRight', fill: '#4299e1' }}
+              tickFormatter={value => formatCurrency(value)}
+              label={{
+                value: '',
+                angle: 90,
+                position: 'insideRight',
+                fill: '#4299e1',
+                offset: -45,
+              }}
               domain={['auto', 'auto']}
             />
             <Tooltip
               contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #2d3748' }}
               labelStyle={{ color: '#888' }}
               itemStyle={{ color: '#e2e8f0' }}
+              formatter={formatTooltipValue}
             />
-            <Legend />
+            <Legend verticalAlign="top" height={36} />
             <Bar
               dataKey="totalBuyValue"
               fill="#48bb78"
