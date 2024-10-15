@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -89,9 +89,9 @@ export function BigTransactionsTableComponent({ cryptoPair }: BigTransactionProp
       clearInterval(updateInterval)
       ws.current?.close()
     }
-  }, [])
+  }, [cryptoPair])
 
-  const getRelativeTime = (timestamp: string) => {
+  const getRelativeTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp)
     const now = new Date()
     const secondsAgo = differenceInSeconds(now, date)
@@ -101,31 +101,45 @@ export function BigTransactionsTableComponent({ cryptoPair }: BigTransactionProp
     }
 
     return formatDistanceToNowStrict(date, { addSuffix: true })
-  }
+  }, [])
 
-  const formatNumber = (num: number, decimals: number = 2) => {
-    const parts = num.toFixed(decimals).split('.')
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-    return parts.join('.')
-  }
+  const formatNumber = useCallback((num: number, decimals: number = 2) => {
+    if (num >= 1 || num === 0) {
+      const parts = num.toFixed(decimals).split('.')
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      return parts.join('.')
+    } else if (num >= 0.01) {
+      return num.toFixed(3)
+    } else if (num >= 0.0001) {
+      return num.toFixed(5)
+    } else {
+      return num.toExponential(2)
+    }
+  }, [])
 
-  const formatCurrency = (num: number) => {
+  const formatCurrency = useCallback((num: number) => {
     if (num >= 1000000) {
       return `$${(num / 1000000).toFixed(2)}M`
     } else if (num >= 1000) {
       return `$${(num / 1000).toFixed(2)}K`
-    } else {
+    } else if (num >= 1) {
       return `$${num.toFixed(2)}`
+    } else if (num >= 0.01) {
+      return `$${num.toFixed(3)}`
+    } else if (num >= 0.0001) {
+      return `$${num.toFixed(5)}`
+    } else {
+      return `$${num.toExponential(2)}`
     }
-  }
+  }, [])
 
-  const getCurrencyImage = (currency: string) => {
+  const getCurrencyImage = useCallback((currency: string) => {
     return `/pairs/${currency}.png`
-  }
+  }, [])
 
-  const getBrokerImage = (broker: string) => {
+  const getBrokerImage = useCallback((broker: string) => {
     return `/brokers/${broker}.png`
-  }
+  }, [])
 
   return (
     <Card className="w-full max-w-4xl mx-auto">

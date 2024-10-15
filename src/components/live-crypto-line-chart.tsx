@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { Wifi, WifiOff } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 type DataPoint = {
   timestamp: string
@@ -53,16 +54,27 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
     })
   }, [])
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
-  }
-
-  const formatTooltipValue = (value: number, name: string) => {
-    if (name === 'Price') {
-      return [formatCurrency(value), name]
+  const formatCurrency = useCallback((value: number) => {
+    if (value >= 1) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+    } else if (value >= 0.01) {
+      return `$${value.toFixed(3)}`
+    } else if (value >= 0.0001) {
+      return `$${value.toFixed(5)}`
+    } else {
+      return `$${value.toExponential(2)}`
     }
-    return [`$${Math.round(value).toLocaleString()}`, name]
-  }
+  }, [])
+
+  const formatTooltipValue = useCallback(
+    (value: number, name: string) => {
+      if (name === 'Price') {
+        return [formatCurrency(value), name]
+      }
+      return [`$${Math.round(value).toLocaleString()}`, name]
+    },
+    [formatCurrency]
+  )
 
   const heartbeat = useCallback(() => {
     if (pingTimeout.current) clearTimeout(pingTimeout.current)
@@ -137,92 +149,94 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
   }, [])
 
   return (
-    <div className="w-full h-[500px] bg-[#0f172a] p-4 rounded-lg">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center">
-          {isConnected ? (
-            <Wifi className="text-green-500 w-6 h-6" aria-label="Connected" />
-          ) : (
-            <WifiOff className="text-red-500 w-6 h-6" aria-label="Disconnected" />
-          )}
-          <span className="ml-2 text-white sr-only">
+    <Card className="w-full bg-background">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="text-sm font-normal">
+            {isConnected ? (
+              <Wifi className="inline-block text-green-500 w-4 h-4 mr-1" />
+            ) : (
+              <WifiOff className="inline-block text-red-500 w-4 h-4 mr-1" />
+            )}
             {isConnected ? 'Connected' : 'Disconnected'}
           </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="w-full h-[420px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data} margin={{ top: 20, right: 60, left: 60, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+              <XAxis
+                dataKey="timestamp"
+                stroke="#888"
+                tick={{ fill: '#888' }}
+                tickFormatter={formatXAxis}
+                minTickGap={50}
+              />
+              <YAxis
+                yAxisId="left"
+                stroke="#888"
+                tick={{ fill: '#888' }}
+                tickFormatter={value => `$${Math.round(value).toLocaleString()}`}
+                label={{
+                  value: 'Total Value',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: '#888',
+                  offset: -45,
+                }}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="#4299e1"
+                tick={{ fill: '#4299e1' }}
+                tickFormatter={formatCurrency}
+                label={{
+                  value: 'Price',
+                  angle: 90,
+                  position: 'insideRight',
+                  fill: '#4299e1',
+                  offset: -45,
+                }}
+                domain={['auto', 'auto']}
+              />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #2d3748' }}
+                labelStyle={{ color: '#888' }}
+                itemStyle={{ color: '#e2e8f0' }}
+                formatter={formatTooltipValue}
+              />
+              <Legend verticalAlign="top" height={36} />
+              <Bar
+                dataKey="totalBuyValue"
+                fill="#48bb78"
+                yAxisId="left"
+                name="Total Buy Value"
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="totalSellValue"
+                fill="#f56565"
+                yAxisId="left"
+                name="Total Sell Value"
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="price"
+                stroke="#4299e1"
+                dot={false}
+                strokeWidth={2}
+                yAxisId="right"
+                name="Price"
+                isAnimationActive={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
-      </div>
-      <div className="w-full h-[420px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 20, right: 60, left: 60, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-            <XAxis
-              dataKey="timestamp"
-              stroke="#888"
-              tick={{ fill: '#888' }}
-              tickFormatter={formatXAxis}
-              minTickGap={50}
-            />
-            <YAxis
-              yAxisId="left"
-              stroke="#888"
-              tick={{ fill: '#888' }}
-              tickFormatter={value => `$${Math.round(value).toLocaleString()}`}
-              label={{
-                value: 'Total Value',
-                angle: -90,
-                position: 'insideLeft',
-                fill: '#888',
-                offset: -45,
-              }}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              stroke="#4299e1"
-              tick={{ fill: '#4299e1' }}
-              tickFormatter={value => formatCurrency(value)}
-              label={{
-                value: 'Price',
-                angle: 90,
-                position: 'insideRight',
-                fill: '#4299e1',
-                offset: -45,
-              }}
-              domain={['auto', 'auto']}
-            />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #2d3748' }}
-              labelStyle={{ color: '#888' }}
-              itemStyle={{ color: '#e2e8f0' }}
-              formatter={formatTooltipValue}
-            />
-            <Legend verticalAlign="top" height={36} />
-            <Bar
-              dataKey="totalBuyValue"
-              fill="#48bb78"
-              yAxisId="left"
-              name="Total Buy Value"
-              isAnimationActive={false}
-            />
-            <Bar
-              dataKey="totalSellValue"
-              fill="#f56565"
-              yAxisId="left"
-              name="Total Sell Value"
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke="#4299e1"
-              dot={false}
-              strokeWidth={2}
-              yAxisId="right"
-              name="Price"
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
