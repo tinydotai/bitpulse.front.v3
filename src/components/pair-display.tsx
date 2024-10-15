@@ -8,14 +8,19 @@ interface PairDisplayProps {
 
 export default function PairDisplay({ pair }: PairDisplayProps) {
   return (
-    <Card className="w-full max-w-4xl mx-auto my-8">
-      <CardHeader>
-        <CardTitle>{pair} Pair Information</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        <LiveCryptoLineChartComponent cryptoPair={pair} />
+    <div className="w-full mx-auto my-8 space-y-8">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">{pair} Pair Buy/Sell</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LiveCryptoLineChartComponent cryptoPair={pair} />
+        </CardContent>
+      </Card>
+
+      <div className="w-full">
         <BigTransactionsTableComponent cryptoPair={pair} />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

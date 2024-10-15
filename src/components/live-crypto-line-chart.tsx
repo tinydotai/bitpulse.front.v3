@@ -139,7 +139,6 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
   return (
     <div className="w-full h-[500px] bg-[#0f172a] p-4 rounded-lg">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-white">Live {cryptoPair} Chart</h2>
         <div className="flex items-center">
           {isConnected ? (
             <Wifi className="text-green-500 w-6 h-6" aria-label="Connected" />
