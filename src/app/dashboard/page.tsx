@@ -1,6 +1,5 @@
 import { BigTransactionsTableComponent } from '@/components/big-transactions-table'
-// import LiveBTCUSDTChart from '@/components/live-btcusdt-chart'
-import { LiveCryptoLineChartComponent } from '@/components/live-line-chart'
+import LiveCryptoLineChartComponent from '@/components/live-crypto-line-chart'
 
 export default function Dashboard() {
   return (

@@ -33,7 +33,7 @@ interface LiveCryptoChartProps {
   cryptoPair: string
 }
 
-export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProps) {
+export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProps) {
   const [data, setData] = useState<DataPoint[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const ws = useRef<WebSocket | null>(null)
@@ -44,13 +44,11 @@ export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProp
     setData(prevData => {
       const existingIndex = prevData.findIndex(point => point.timestamp === newDataPoint.timestamp)
       if (existingIndex !== -1) {
-        // If a data point with the same timestamp exists, update it
         const updatedData = [...prevData]
         updatedData[existingIndex] = newDataPoint
-        return updatedData.slice(-60) // Keep only the last 60 data points
+        return updatedData.slice(-60)
       } else {
-        // If it's a new data point, add it to the array
-        return [...prevData, newDataPoint].slice(-60) // Keep only the last 60 data points
+        return [...prevData, newDataPoint].slice(-60)
       }
     })
   }, [])
@@ -63,7 +61,7 @@ export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProp
     if (name === 'Price') {
       return [formatCurrency(value), name]
     }
-    return [formatCurrency(value), name]
+    return [`$${Math.round(value).toLocaleString()}`, name]
   }
 
   const heartbeat = useCallback(() => {
@@ -74,7 +72,7 @@ export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProp
         ws.current.close()
         connectWebSocket()
       }
-    }, 5000) // Consider connection lost if no pong received within 5 seconds
+    }, 5000)
   }, [])
 
   const connectWebSocket = useCallback(() => {
@@ -125,7 +123,7 @@ export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProp
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify({ type: 'ping' }))
       }
-    }, 3000) // Send ping every 3 seconds
+    }, 3000)
 
     return () => {
       if (pingInterval.current) clearInterval(pingInterval.current)
@@ -168,9 +166,9 @@ export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProp
               yAxisId="left"
               stroke="#888"
               tick={{ fill: '#888' }}
-              tickFormatter={value => formatCurrency(value)}
+              tickFormatter={value => `$${Math.round(value).toLocaleString()}`}
               label={{
-                value: '',
+                value: 'Total Value',
                 angle: -90,
                 position: 'insideLeft',
                 fill: '#888',
@@ -184,7 +182,7 @@ export function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProp
               tick={{ fill: '#4299e1' }}
               tickFormatter={value => formatCurrency(value)}
               label={{
-                value: '',
+                value: 'Price',
                 angle: 90,
                 position: 'insideRight',
                 fill: '#4299e1',
