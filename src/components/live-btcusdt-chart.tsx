@@ -21,6 +21,14 @@ type DataPoint = {
   totalSellValue: number
 }
 
+interface WebSocketMessage {
+  timestamp: string
+  buy_avg_price: number
+  sell_avg_price: number
+  buy_total_value: number
+  sell_total_value: number
+}
+
 export default function Component() {
   const [data, setData] = useState<DataPoint[]>([])
   const [isConnected, setIsConnected] = useState(false)
@@ -83,7 +91,7 @@ export default function Component() {
       if (message.type === 'pong') {
         heartbeat()
       } else if (Array.isArray(message) && message.length > 0) {
-        message.forEach((item: any) => {
+        message.forEach((item: WebSocketMessage) => {
           const newDataPoint = {
             timestamp: new Date(item.timestamp).toLocaleTimeString('en-US', { hour12: false }),
             price: (item.buy_avg_price + item.sell_avg_price) / 2,
