@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { BigTransactionsTableComponent } from './big-transactions-table'
 import LiveCryptoLineChartComponent from './live-crypto-line-chart'
 
@@ -13,9 +13,7 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
         <CardHeader>
           <CardTitle className="text-2xl font-bold">{pair} Pair Buy/Sell</CardTitle>
         </CardHeader>
-        <CardContent>
-          <LiveCryptoLineChartComponent cryptoPair={pair} />
-        </CardContent>
+        <LiveCryptoLineChartComponent cryptoPair={pair} />
       </Card>
 
       <div className="w-full">
