@@ -12,6 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { Wifi, WifiOff } from 'lucide-react'
 
 type DataPoint = {
   timestamp: string
@@ -24,6 +25,8 @@ export default function Component() {
   const [data, setData] = useState<DataPoint[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const ws = useRef<WebSocket | null>(null)
+  const pingInterval = useRef<NodeJS.Timeout | null>(null)
+  const pingTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const addDataPoint = useCallback((newDataPoint: DataPoint) => {
     setData(prevData => {
@@ -43,18 +46,36 @@ export default function Component() {
     return [formatCurrency(value), name]
   }
 
-  useEffect(() => {
+  const heartbeat = useCallback(() => {
+    if (pingTimeout.current) clearTimeout(pingTimeout.current)
+    pingTimeout.current = setTimeout(() => {
+      setIsConnected(false)
+      if (ws.current) {
+        ws.current.close()
+        connectWebSocket()
+      }
+    }, 5000) // Consider connection lost if no pong received within 5 seconds
+  }, [])
+
+  const connectWebSocket = useCallback(() => {
+    if (ws.current) {
+      ws.current.close()
+    }
+
     ws.current = new WebSocket('ws://localhost:8000/stats/ws/transaction_stats/BTCUSDT')
 
     ws.current.onopen = () => {
       console.log('WebSocket connected')
       setIsConnected(true)
+      heartbeat()
     }
 
     ws.current.onmessage = event => {
-      const newDataArray = JSON.parse(event.data)
-      if (Array.isArray(newDataArray) && newDataArray.length > 0) {
-        newDataArray.forEach((item: any) => {
+      const message = JSON.parse(event.data)
+      if (message.type === 'pong') {
+        heartbeat()
+      } else if (Array.isArray(message) && message.length > 0) {
+        message.forEach((item: any) => {
           const newDataPoint = {
             timestamp: new Date(item.timestamp).toLocaleTimeString('en-US', { hour12: false }),
             price: (item.buy_avg_price + item.sell_avg_price) / 2,
@@ -71,21 +92,27 @@ export default function Component() {
       setIsConnected(false)
     }
 
-    const sendUpdateRequest = () => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify({ action: 'update' }))
-      }
+    ws.current.onerror = error => {
+      console.error('WebSocket error:', error)
+      setIsConnected(false)
     }
+  }, [addDataPoint, heartbeat])
 
-    const intervalId = setInterval(sendUpdateRequest, 10000)
+  useEffect(() => {
+    connectWebSocket()
+
+    pingInterval.current = setInterval(() => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify({ type: 'ping' }))
+      }
+    }, 3000) // Send ping every 3 seconds
 
     return () => {
-      clearInterval(intervalId)
-      if (ws.current) {
-        ws.current.close()
-      }
+      if (pingInterval.current) clearInterval(pingInterval.current)
+      if (pingTimeout.current) clearTimeout(pingTimeout.current)
+      if (ws.current) ws.current.close()
     }
-  }, [addDataPoint])
+  }, [connectWebSocket])
 
   const formatXAxis = useCallback((tickItem: string) => {
     return tickItem
@@ -93,13 +120,19 @@ export default function Component() {
 
   return (
     <div className="w-full h-[500px] bg-[#0f172a] p-4 rounded-lg">
-      <h2 className="text-2xl font-bold mb-4 text-white">Live BTCUSDT Chart</h2>
-      <p className="mb-2 text-white">
-        Status:{' '}
-        <span className={isConnected ? 'text-green-500' : 'text-red-500'}>
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </span>
-      </p>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-white">Live BTCUSDT Chart</h2>
+        <div className="flex items-center">
+          {isConnected ? (
+            <Wifi className="text-green-500 w-6 h-6" aria-label="Connected" />
+          ) : (
+            <WifiOff className="text-red-500 w-6 h-6" aria-label="Disconnected" />
+          )}
+          <span className="ml-2 text-white sr-only">
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </span>
+        </div>
+      </div>
       <div className="w-full h-[420px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 20, right: 60, left: 60, bottom: 20 }}>
