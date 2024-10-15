@@ -20,38 +20,17 @@ type DataPoint = {
   totalSellValue: number
 }
 
-export default function LiveBTCUSDTChart() {
+export default function Component() {
   const [data, setData] = useState<DataPoint[]>([])
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 60 })
   const [isConnected, setIsConnected] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [startX, setStartX] = useState(0)
   const ws = useRef<WebSocket | null>(null)
-  const chartRef = useRef<any>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
 
-  const addDataPoint = useCallback(
-    (newDataPoint: DataPoint) => {
-      setData(prevData => {
-        const newData = [...prevData, newDataPoint]
-        if (newData.length > 300) {
-          newData.shift()
-        }
-        return newData
-      })
-      setVisibleRange(prevRange => {
-        const dataLength = data.length + 1 // +1 for the new data point
-        if (prevRange.end === dataLength - 1 || prevRange.end === 300) {
-          return {
-            start: Math.max(0, Math.min(dataLength - 60, prevRange.start + 1)),
-            end: Math.min(dataLength, 300),
-          }
-        }
-        return prevRange
-      })
-    },
-    [data.length]
-  )
+  const addDataPoint = useCallback((newDataPoint: DataPoint) => {
+    setData(prevData => {
+      const newData = [...prevData, newDataPoint].slice(-60)
+      return newData
+    })
+  }, [])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
@@ -77,7 +56,7 @@ export default function LiveBTCUSDTChart() {
       if (Array.isArray(newDataArray) && newDataArray.length > 0) {
         newDataArray.forEach((item: any) => {
           const newDataPoint = {
-            timestamp: new Date(item.timestamp).toLocaleTimeString(),
+            timestamp: new Date(item.timestamp).toLocaleTimeString('en-US', { hour12: false }),
             price: (item.buy_avg_price + item.sell_avg_price) / 2,
             totalBuyValue: item.buy_total_value,
             totalSellValue: item.sell_total_value,
@@ -109,36 +88,8 @@ export default function LiveBTCUSDTChart() {
   }, [addDataPoint])
 
   const formatXAxis = useCallback((tickItem: string) => {
-    return tickItem.split(':').slice(0, 2).join(':')
+    return tickItem
   }, [])
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    setIsDragging(true)
-    setStartX(e.clientX)
-  }
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return
-
-    const dx = e.clientX - startX
-    const scrollAmount = Math.round(dx / 10)
-
-    setVisibleRange(prevRange => {
-      const newStart = Math.max(0, Math.min(data.length - 60, prevRange.start - scrollAmount))
-      return {
-        start: newStart,
-        end: Math.min(newStart + 60, data.length),
-      }
-    })
-
-    setStartX(e.clientX)
-  }
-
-  const handleMouseUp = () => {
-    setIsDragging(false)
-  }
-
-  const visibleData = data.slice(visibleRange.start, visibleRange.end)
 
   return (
     <div className="w-full h-[500px] bg-[#0f172a] p-4 rounded-lg">
@@ -149,20 +100,9 @@ export default function LiveBTCUSDTChart() {
           {isConnected ? 'Connected' : 'Disconnected'}
         </span>
       </p>
-      <div
-        className="w-full h-[420px] select-none cursor-grab active:cursor-grabbing"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        ref={containerRef}
-      >
+      <div className="w-full h-[420px]">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={visibleData}
-            ref={chartRef}
-            margin={{ top: 20, right: 60, left: 60, bottom: 20 }}
-          >
+          <ComposedChart data={data} margin={{ top: 20, right: 60, left: 60, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
             <XAxis
               dataKey="timestamp"
