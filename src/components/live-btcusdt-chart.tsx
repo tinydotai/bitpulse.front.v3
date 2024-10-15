@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -142,7 +141,7 @@ export default function LiveBTCUSDTChart() {
         >
           <div
             style={{
-              width: `${Math.max(100, data.length * 10)}%`,
+              width: `${Math.max(100, data.length * 3)}%`,
               height: '100%',
               minWidth: '100%',
             }}
