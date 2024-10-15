@@ -29,14 +29,18 @@ interface Transaction {
   source: string
 }
 
-export function BigTransactionsTableComponent() {
+interface BigTransactionProps {
+  cryptoPair: string
+}
+
+export function BigTransactionsTableComponent({ cryptoPair }: BigTransactionProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [, setUpdateTrigger] = useState(0)
   const ws = useRef<WebSocket | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    ws.current = new WebSocket('ws://localhost:8000/whales/ws/big_transactions/ETHUSDT')
+    ws.current = new WebSocket(`ws://localhost:8000/whales/ws/big_transactions/${cryptoPair}`)
 
     ws.current.onopen = () => {
       console.log('WebSocket connection established')

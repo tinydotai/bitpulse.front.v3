@@ -14,7 +14,7 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
       </CardHeader>
       <CardContent className="space-y-8">
         <LiveCryptoLineChartComponent cryptoPair={pair} />
-        <BigTransactionsTableComponent />
+        <BigTransactionsTableComponent cryptoPair={pair} />
       </CardContent>
     </Card>
   )
