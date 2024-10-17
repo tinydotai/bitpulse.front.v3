@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface CryptoCurrency {
   id: string
@@ -13,9 +14,12 @@ interface CryptoCurrency {
   image: string
   current_price: number
   market_cap: number
-  market_cap_rank: number
   price_change_percentage_24h: number
   timestamp: string
+  ath: number
+  atl: number
+  circulating_supply: number
+  total_supply: number
 }
 
 export default function Dashboard() {
@@ -29,8 +33,11 @@ export default function Dashboard() {
       try {
         const response = await fetch('http://0.0.0.0:8000/cryptos/data')
         const data = await response.json()
-        setCryptoData(data)
-        setFilteredData(data)
+        const sortedData = data.sort(
+          (a: CryptoCurrency, b: CryptoCurrency) => b.market_cap - a.market_cap
+        )
+        setCryptoData(sortedData)
+        setFilteredData(sortedData)
         setIsLoading(false)
       } catch (error) {
         console.error('Error fetching crypto data:', error)
@@ -70,6 +77,44 @@ export default function Dashboard() {
     }
   }
 
+  const formatMarketCap = (marketCap: number) => {
+    if (marketCap >= 1e12) {
+      return `$${(marketCap / 1e12).toFixed(2)}T`
+    } else if (marketCap >= 1e9) {
+      return `$${(marketCap / 1e9).toFixed(2)}B`
+    } else if (marketCap >= 1e6) {
+      return `$${(marketCap / 1e6).toFixed(2)}M`
+    } else {
+      return `$${marketCap.toFixed(2)}`
+    }
+  }
+
+  const formatPrice = (price: number) => {
+    if (price < 0.000001) {
+      return `$${price.toExponential(2)}`
+    } else if (price < 0.01) {
+      return `$${price.toFixed(6)}`
+    } else if (price < 1) {
+      return `$${price.toFixed(4)}`
+    } else if (price < 10) {
+      return `$${price.toFixed(3)}`
+    } else {
+      return `$${price.toFixed(2)}`
+    }
+  }
+
+  const formatSupply = (supply: number) => {
+    if (supply >= 1e9) {
+      return `${(supply / 1e9).toFixed(2)}B`
+    } else if (supply >= 1e6) {
+      return `${(supply / 1e6).toFixed(2)}M`
+    } else if (supply >= 1e3) {
+      return `${(supply / 1e3).toFixed(2)}K`
+    } else {
+      return supply.toFixed(2)
+    }
+  }
+
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Crypto Dashboard</h1>
@@ -97,54 +142,74 @@ export default function Dashboard() {
                   <CardContent>
                     <Skeleton className="h-4 w-20 mb-2" />
                     <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24 mt-2" />
                   </CardContent>
                 </Card>
               ))
           : filteredData.map(crypto => (
-              <Card key={crypto.id} className="hover:shadow-lg transition-shadow duration-300">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <img
-                      src={crypto.image}
-                      alt={`${crypto.name} logo`}
-                      className="w-6 h-6 rounded-full"
-                      onError={e => {
-                        const target = e.target as HTMLImageElement
-                        target.onerror = null
-                        target.src = '/placeholder.svg?height=24&width=24'
-                      }}
-                    />
-                    <span className="truncate">{crypto.name}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Price: ${crypto.current_price.toFixed(2)}</p>
-                    <p className="text-sm">
-                      24h Change:{' '}
-                      <span
-                        className={
-                          crypto.price_change_percentage_24h >= 0
-                            ? 'text-green-600'
-                            : 'text-red-600'
-                        }
-                      >
-                        {crypto.price_change_percentage_24h.toFixed(2)}%
-                      </span>
-                    </p>
-                    <p className="text-sm">Market Cap Rank: #{crypto.market_cap_rank}</p>
-                    <p className="text-xs text-gray-500">
-                      Last Updated: {getMinutesAgo(crypto.timestamp)}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/pair/${crypto.symbol}USDT`}
-                    className="text-blue-500 hover:text-blue-700 transition-colors duration-300 mt-2 inline-block"
-                  >
-                    View Details
-                  </Link>
-                </CardContent>
-              </Card>
+              <TooltipProvider key={crypto.id}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Card className="hover:shadow-lg transition-shadow duration-300">
+                      <CardHeader>
+                        <CardTitle className="flex items-center space-x-2">
+                          <img
+                            src={crypto.image}
+                            alt={`${crypto.name} logo`}
+                            className="w-6 h-6 rounded-full"
+                            onError={e => {
+                              const target = e.target as HTMLImageElement
+                              target.onerror = null
+                              target.src = '/placeholder.svg?height=24&width=24'
+                            }}
+                          />
+                          <span className="truncate">{crypto.name}</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">
+                            Price: {formatPrice(crypto.current_price)}
+                          </p>
+                          <p className="text-sm">
+                            24h Change:{' '}
+                            <span
+                              className={
+                                crypto.price_change_percentage_24h >= 0
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                              }
+                            >
+                              {crypto.price_change_percentage_24h.toFixed(2)}%
+                            </span>
+                          </p>
+                          <p className="text-sm">
+                            Market Cap: {formatMarketCap(crypto.market_cap)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Last Updated: {getMinutesAgo(crypto.timestamp)}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/pair/${crypto.symbol}USDT`}
+                          className="text-blue-500 hover:text-blue-700 transition-colors duration-300 mt-2 inline-block"
+                        >
+                          View Details
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="p-2 space-y-2">
+                      <p>Symbol: {crypto.symbol.toUpperCase()}</p>
+                      <p>All-Time High: {formatPrice(crypto.ath)}</p>
+                      <p>All-Time Low: {formatPrice(crypto.atl)}</p>
+                      <p>Circulating Supply: {formatSupply(crypto.circulating_supply)}</p>
+                      <p>Total Supply: {formatSupply(crypto.total_supply)}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ))}
       </div>
     </div>
