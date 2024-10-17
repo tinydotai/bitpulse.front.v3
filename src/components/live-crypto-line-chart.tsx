@@ -176,6 +176,16 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
     }
   }
 
+  const calculatePriceDomain = useCallback(() => {
+    if (data.length === 0) return [0, 1] // Default domain if no data
+    const prices = data.map(d => d.price)
+    const minPrice = Math.min(...prices)
+    const maxPrice = Math.max(...prices)
+    const maxPadding = maxPrice * 0.001 // 0.1% padding
+    const minPadding = minPrice * 0.001 // 0.1% padding
+    return [minPrice - minPadding, maxPrice + maxPadding]
+  }, [data])
+
   return (
     <Card className="w-full bg-background">
       <CardHeader>
@@ -243,7 +253,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
                   fill: '#4299e1',
                   offset: -45,
                 }}
-                domain={['auto', 'auto']}
+                domain={calculatePriceDomain()}
               />
               <Tooltip
                 contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #2d3748' }}
