@@ -227,7 +227,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <Link
-                          href={`/pair/${crypto.symbol.toUpperCase()}USDT`}
+                          href={`/pair/${crypto.symbol.toUpperCase()}`}
                           className="text-blue-500 hover:text-blue-700 transition-colors duration-300 mt-2 inline-block"
                         >
                           View Details
