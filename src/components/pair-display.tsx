@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { BigTransactionsTableComponent } from './big-transactions-table'
 import LiveCryptoLineChartComponent from './live-crypto-line-chart'
 
