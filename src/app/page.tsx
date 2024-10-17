@@ -1,8 +1,14 @@
-// import { RegisterPage } from '@/components/register-page'
-// import { LoginPage } from '@/components/login-page'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
-  return <h1>hi</h1>
-  // return <LoginPage />
-  // return <RegisterPage />
+  const router = useRouter()
+
+  useEffect(() => {
+    router.push('/dashboard')
+  }, [router])
+
+  return null
 }
