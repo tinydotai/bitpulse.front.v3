@@ -43,7 +43,7 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
                   className="mr-2 inline-block"
                 />
               )}
-              {source.charAt(0).toUpperCase() + source.slice(1)}
+              {source === 'all' ? 'All Brokers' : source.charAt(0).toUpperCase() + source.slice(1)}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -58,7 +58,7 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
                     className="mr-2 inline-block"
                   />
                 )}
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {s === 'all' ? 'All Brokers' : s.charAt(0).toUpperCase() + s.slice(1)}
               </SelectItem>
             ))}
           </SelectContent>
