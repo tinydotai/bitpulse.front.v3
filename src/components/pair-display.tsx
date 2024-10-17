@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { BigTransactionsTableComponent } from './big-transactions-table'
 import LiveCryptoLineChartComponent from './live-crypto-line-chart'
@@ -28,14 +29,35 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
 
   return (
     <div className="w-full mx-auto my-8 space-y-8">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-4xl font-bold">{pair.toUpperCase()}</h1>
         <Select value={source} onValueChange={handleSourceChange}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select source" />
+            <SelectValue placeholder="Select source">
+              {source !== 'all' && (
+                <Image
+                  src={`/brokers/${source}.png`}
+                  alt={source}
+                  width={17}
+                  height={17}
+                  className="mr-2 inline-block"
+                />
+              )}
+              {source.charAt(0).toUpperCase() + source.slice(1)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {SOURCES.map(s => (
-              <SelectItem key={s} value={s}>
+              <SelectItem key={s} value={s} className="flex items-center">
+                {s !== 'all' && (
+                  <Image
+                    src={`/brokers/${s}.png`}
+                    alt={s}
+                    width={17}
+                    height={17}
+                    className="mr-2 inline-block"
+                  />
+                )}
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </SelectItem>
             ))}
