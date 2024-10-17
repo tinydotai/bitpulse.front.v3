@@ -31,20 +31,32 @@ interface Transaction {
 
 interface BigTransactionProps {
   cryptoPair: string
+  source: string
 }
 
-export function BigTransactionsTableComponent({ cryptoPair }: BigTransactionProps) {
+export function BigTransactionsTableComponent({ cryptoPair, source }: BigTransactionProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [, setUpdateTrigger] = useState(0)
   const ws = useRef<WebSocket | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  useEffect(() => {
-    ws.current = new WebSocket(`ws://localhost:8000/whales/ws/big_transactions/${cryptoPair}`)
+  const connectWebSocket = useCallback(() => {
+    if (ws.current) {
+      ws.current.close()
+    }
+
+    const sourceParam = source !== 'all' ? `?source=${source}` : ''
+    ws.current = new WebSocket(
+      `ws://localhost:8000/whales/ws/big_transactions/${cryptoPair}${sourceParam}`
+    )
 
     ws.current.onopen = () => {
       console.log('WebSocket connection established')
       ws.current?.send('Request update')
+
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
 
       intervalRef.current = setInterval(() => {
         if (ws.current?.readyState === WebSocket.OPEN) {
@@ -76,6 +88,11 @@ export function BigTransactionsTableComponent({ cryptoPair }: BigTransactionProp
         clearInterval(intervalRef.current)
       }
     }
+  }, [cryptoPair, source])
+
+  useEffect(() => {
+    connectWebSocket()
+    setTransactions([]) // Clear existing transactions when source changes
 
     // Set up interval to update relative times every second
     const updateInterval = setInterval(() => {
@@ -87,9 +104,11 @@ export function BigTransactionsTableComponent({ cryptoPair }: BigTransactionProp
         clearInterval(intervalRef.current)
       }
       clearInterval(updateInterval)
-      ws.current?.close()
+      if (ws.current) {
+        ws.current.close()
+      }
     }
-  }, [cryptoPair])
+  }, [cryptoPair, source, connectWebSocket])
 
   const getRelativeTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp)
@@ -144,7 +163,7 @@ export function BigTransactionsTableComponent({ cryptoPair }: BigTransactionProp
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Big Transactions</CardTitle>
+        <CardTitle>Big Transactions ({source.charAt(0).toUpperCase() + source.slice(1)})</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="relative overflow-hidden" style={{ height: '400px' }}>

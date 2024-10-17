@@ -1,3 +1,4 @@
+// live-crypto-line-chart.tsx
 'use client'
 
 import React, { useEffect, useState, useRef, useCallback } from 'react'
@@ -40,12 +41,13 @@ interface WebSocketMessage {
 
 interface LiveCryptoChartProps {
   cryptoPair: string
+  source: string
 }
 
 const INTERVALS = [1, 10, 30, 60]
 const DEFAULT_INTERVAL = 60
 
-export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoChartProps) {
+export default function LiveCryptoLineChartComponent({ cryptoPair, source }: LiveCryptoChartProps) {
   const [data, setData] = useState<DataPoint[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const intervalRef = useRef(DEFAULT_INTERVAL)
@@ -105,9 +107,10 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
       ws.current.close()
     }
 
-    console.log(`Connecting WebSocket with interval: ${intervalRef.current}`)
+    console.log(`Connecting WebSocket with interval: ${intervalRef.current} and source: ${source}`)
+    const sourceParam = source !== 'all' ? `&source=${source}` : ''
     ws.current = new WebSocket(
-      `ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}`
+      `ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}?${sourceParam}`
     )
 
     ws.current.onopen = () => {
@@ -142,10 +145,10 @@ export default function LiveCryptoLineChartComponent({ cryptoPair }: LiveCryptoC
       console.error('WebSocket error:', error)
       setIsConnected(false)
     }
-  }, [addDataPoint, heartbeat, cryptoPair])
+  }, [addDataPoint, heartbeat, cryptoPair, source])
 
   useEffect(() => {
-    console.log(`Effect running with interval: ${intervalRef.current}`)
+    console.log(`Effect running with interval: ${intervalRef.current} and source: ${source}`)
     connectWebSocket()
 
     pingInterval.current = setInterval(() => {
