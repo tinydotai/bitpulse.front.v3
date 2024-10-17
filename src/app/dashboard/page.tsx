@@ -6,6 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface CryptoCurrency {
   id: string
@@ -22,22 +29,22 @@ interface CryptoCurrency {
   total_supply: number
 }
 
+type SortOption = 'market_cap' | 'price' | 'name' | '24h_change'
+
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('')
   const [cryptoData, setCryptoData] = useState<CryptoCurrency[]>([])
   const [filteredData, setFilteredData] = useState<CryptoCurrency[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [sortOption, setSortOption] = useState<SortOption>('market_cap')
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch('http://0.0.0.0:8000/cryptos/data')
         const data = await response.json()
-        const sortedData = data.sort(
-          (a: CryptoCurrency, b: CryptoCurrency) => b.market_cap - a.market_cap
-        )
-        setCryptoData(sortedData)
-        setFilteredData(sortedData)
+        setCryptoData(data)
+        setFilteredData(data)
         setIsLoading(false)
       } catch (error) {
         console.error('Error fetching crypto data:', error)
@@ -54,8 +61,26 @@ export default function Dashboard() {
         crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    setFilteredData(filtered)
-  }, [searchTerm, cryptoData])
+    const sorted = sortData(filtered, sortOption)
+    setFilteredData(sorted)
+  }, [searchTerm, cryptoData, sortOption])
+
+  const sortData = (data: CryptoCurrency[], option: SortOption) => {
+    switch (option) {
+      case 'market_cap':
+        return [...data].sort((a, b) => b.market_cap - a.market_cap)
+      case 'price':
+        return [...data].sort((a, b) => b.current_price - a.current_price)
+      case 'name':
+        return [...data].sort((a, b) => a.name.localeCompare(b.name))
+      case '24h_change':
+        return [...data].sort(
+          (a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h
+        )
+      default:
+        return data
+    }
+  }
 
   const getMinutesAgo = (timestamp: string) => {
     const now = new Date()
@@ -118,7 +143,7 @@ export default function Dashboard() {
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Crypto Dashboard</h1>
-      <div className="mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <Input
           type="text"
           placeholder="Search cryptocurrencies..."
@@ -126,6 +151,17 @@ export default function Dashboard() {
           onChange={e => setSearchTerm(e.target.value)}
           className="max-w-md"
         />
+        <Select value={sortOption} onValueChange={(value: SortOption) => setSortOption(value)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="market_cap">Market Cap</SelectItem>
+            <SelectItem value="price">Price</SelectItem>
+            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="24h_change">24h Change</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {isLoading
@@ -191,7 +227,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <Link
-                          href={`/pair/${crypto.symbol}USDT`}
+                          href={`/pair/${crypto.symbol.toUpperCase()}USDT`}
                           className="text-blue-500 hover:text-blue-700 transition-colors duration-300 mt-2 inline-block"
                         >
                           View Details
