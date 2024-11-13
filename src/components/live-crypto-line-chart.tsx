@@ -1,6 +1,3 @@
-// live-crypto-line-chart.tsx
-'use client'
-
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import {
   ComposedChart,
@@ -55,6 +52,17 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const ws = useRef<WebSocket | null>(null)
   const pingInterval = useRef<NodeJS.Timeout | null>(null)
   const pingTimeout = useRef<NodeJS.Timeout | null>(null)
+  const currentSource = useRef(source)
+
+  // Update currentSource ref when source prop changes
+  useEffect(() => {
+    if (currentSource.current !== source) {
+      currentSource.current = source
+      // Clear data and reconnect when source changes
+      setData([])
+      connectWebSocket()
+    }
+  }, [source])
 
   const addDataPoint = useCallback((newDataPoint: DataPoint) => {
     setData(prevData => {
@@ -107,11 +115,14 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       ws.current.close()
     }
 
-    console.log(`Connecting WebSocket with interval: ${intervalRef.current} and source: ${source}`)
-    const sourceParam = source !== 'all' ? `&source=${source}` : ''
-    ws.current = new WebSocket(
-      `ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}?${sourceParam}`
-    )
+    // Construct URL with source parameter only if it's not 'all'
+    const sourceParam = currentSource.current !== 'all' ? `source=${currentSource.current}` : ''
+    const baseUrl = `ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}`
+    const fullUrl = sourceParam ? `${baseUrl}?${sourceParam}` : baseUrl
+
+    console.log(`Connecting WebSocket with interval: ${intervalRef.current} and URL: ${fullUrl}`)
+
+    ws.current = new WebSocket(fullUrl)
 
     ws.current.onopen = () => {
       console.log('WebSocket connected')
@@ -145,10 +156,9 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       console.error('WebSocket error:', error)
       setIsConnected(false)
     }
-  }, [addDataPoint, heartbeat, cryptoPair, source])
+  }, [cryptoPair, heartbeat, addDataPoint])
 
   useEffect(() => {
-    console.log(`Effect running with interval: ${intervalRef.current} and source: ${source}`)
     connectWebSocket()
 
     pingInterval.current = setInterval(() => {
