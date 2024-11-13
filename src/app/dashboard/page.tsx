@@ -44,7 +44,13 @@ export default function Dashboard() {
         const response = await fetch('http://0.0.0.0:8000/cryptos/data')
         const data = await response.json()
         setCryptoData(data)
-        setFilteredData(data)
+        setFilteredData(prevFiltered => {
+          // Maintain the current filtered and sorted state
+          if (searchTerm === '') {
+            return sortData(data, sortOption)
+          }
+          return prevFiltered
+        })
         setIsLoading(false)
       } catch (error) {
         console.error('Error fetching crypto data:', error)
@@ -52,8 +58,15 @@ export default function Dashboard() {
       }
     }
 
+    // Initial fetch
     fetchData()
-  }, [])
+
+    // Set up polling interval
+    const intervalId = setInterval(fetchData, 2000)
+
+    // Cleanup function
+    return () => clearInterval(intervalId)
+  }, [searchTerm, sortOption]) // Add dependencies to prevent stale closures
 
   useEffect(() => {
     const filtered = cryptoData.filter(

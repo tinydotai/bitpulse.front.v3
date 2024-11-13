@@ -29,7 +29,10 @@ export default function DashboardComponent() {
         const response = await fetch('http://0.0.0.0:8000/cryptos/data')
         const data = await response.json()
         setCryptoData(data)
-        setFilteredData(data)
+        setFilteredData(prevFiltered => {
+          // Only update filtered data if search term is empty
+          return searchTerm === '' ? data : prevFiltered
+        })
         setIsLoading(false)
       } catch (error) {
         console.error('Error fetching crypto data:', error)
@@ -37,8 +40,15 @@ export default function DashboardComponent() {
       }
     }
 
+    // Initial fetch
     fetchData()
-  }, [])
+
+    // Set up polling interval
+    const intervalId = setInterval(fetchData, 2000) // 2000ms = 2 seconds
+
+    // Cleanup function to clear interval when component unmounts
+    return () => clearInterval(intervalId)
+  }, [searchTerm]) // Add searchTerm as dependency to prevent unnecessary filtered data updates
 
   useEffect(() => {
     const filtered = cryptoData.filter(
