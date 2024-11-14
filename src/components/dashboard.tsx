@@ -6,6 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 
+interface CalculatedStats {
+  prices: {
+    binance: number
+  }
+  market_average: number
+  change_24h: number
+  timestamp: string
+  last_updated: {
+    binance: string
+    coingecko: string
+  }
+  execution_time: number
+}
+
 interface CryptoCurrency {
   id: string
   symbol: string
@@ -13,8 +27,13 @@ interface CryptoCurrency {
   image: string
   current_price: number
   market_cap: number
-  market_cap_rank: number
   price_change_percentage_24h: number
+  timestamp: string
+  ath: number
+  atl: number
+  circulating_supply: number
+  total_supply: number
+  calculated_stats: CalculatedStats
 }
 
 export default function DashboardComponent() {
@@ -104,20 +123,22 @@ export default function DashboardComponent() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Price: ${crypto.current_price.toFixed(2)}</p>
+                    <p className="text-sm font-medium">
+                      Price: ${crypto.calculated_stats.market_average.toFixed(2)}
+                    </p>
                     <p className="text-sm">
                       24h Change:{' '}
                       <span
                         className={
-                          crypto.price_change_percentage_24h >= 0
+                          crypto.calculated_stats.change_24h >= 0
                             ? 'text-green-600'
                             : 'text-red-600'
                         }
                       >
-                        {crypto.price_change_percentage_24h.toFixed(2)}%
+                        {crypto.calculated_stats.change_24h.toFixed(2)}%
                       </span>
                     </p>
-                    <p className="text-sm">Market Cap Rank: #{crypto.market_cap_rank}</p>
+                    <p className="text-sm">Market Cap Rank: #{crypto.market_cap}</p>
                   </div>
                 </CardContent>
               </Card>

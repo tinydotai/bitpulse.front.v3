@@ -14,6 +14,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+interface CalculatedStats {
+  prices: {
+    binance: number
+  }
+  market_average: number
+  change_24h: number
+  timestamp: string
+  last_updated: {
+    binance: string
+    coingecko: string
+  }
+  execution_time: number
+}
+
 interface CryptoCurrency {
   id: string
   symbol: string
@@ -27,6 +41,7 @@ interface CryptoCurrency {
   atl: number
   circulating_supply: number
   total_supply: number
+  calculated_stats: CalculatedStats
 }
 
 type SortOption = 'market_cap' | 'price' | 'name' | '24h_change'
@@ -218,18 +233,18 @@ export default function Dashboard() {
                       <CardContent>
                         <div className="space-y-2">
                           <p className="text-sm font-medium">
-                            Price: {formatPrice(crypto.current_price)}
+                            Price: {formatPrice(crypto.calculated_stats.market_average)}
                           </p>
                           <p className="text-sm">
                             24h Change:{' '}
                             <span
                               className={
-                                crypto.price_change_percentage_24h >= 0
+                                crypto.calculated_stats.change_24h >= 0
                                   ? 'text-green-600'
                                   : 'text-red-600'
                               }
                             >
-                              {crypto.price_change_percentage_24h.toFixed(2)}%
+                              {crypto.calculated_stats.change_24h.toFixed(2)}%
                             </span>
                           </p>
                           <p className="text-sm">
