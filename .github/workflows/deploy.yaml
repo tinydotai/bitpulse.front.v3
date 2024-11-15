@@ -1,0 +1,41 @@
+name: Auto Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Show current directory contents
+        run: ls -al
+
+      - name: Build Docker image
+        run: docker build -t bitpulse_front_temp .
+
+      - name: Stop and remove existing container
+        run: docker stop bitpulse_front || true && docker rm bitpulse_front || true
+
+      - name: Remove existing image
+        run: docker rmi bitpulse_front || true
+
+      - name: Show Docker images
+        run: docker images
+
+      - name: Rename temp image
+        run: docker tag bitpulse_front_temp bitpulse_front
+
+      - name: Remove temp image
+        run: docker rmi bitpulse_front_temp
+
+      - name: Show Docker containers
+        run: docker ps -a
+
+      - name: Run Docker container
+        run: docker run -d --name bitpulse_front -p 80:3000 bitpulse_front
