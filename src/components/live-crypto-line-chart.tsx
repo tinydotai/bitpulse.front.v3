@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { WS_DOMAIN } from '@/app/config'
 
 type DataPoint = {
   timestamp: string
@@ -117,7 +118,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
 
     // Construct URL with source parameter only if it's not 'all'
     const sourceParam = currentSource.current !== 'all' ? `source=${currentSource.current}` : ''
-    const baseUrl = `ws://localhost:8000/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}`
+    const baseUrl = `${WS_DOMAIN}/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}`
     const fullUrl = sourceParam ? `${baseUrl}?${sourceParam}` : baseUrl
 
     console.log(`Connecting WebSocket with interval: ${intervalRef.current} and URL: ${fullUrl}`)

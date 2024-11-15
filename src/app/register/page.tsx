@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle, Check } from 'lucide-react'
+import { DOMAIN } from '../config'
 
 interface ErrorResponse {
   detail: Array<{
@@ -90,7 +91,7 @@ export default function RegisterPage() {
 
     try {
       const response = await axios.post(
-        'http://localhost:8000/jwt/register',
+        `${DOMAIN}/jwt/register`,
         { ...formData, username: formData.email },
         {
           headers: {

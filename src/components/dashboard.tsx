@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DOMAIN } from '@/app/config'
 
 interface CalculatedStats {
   prices: {
@@ -45,7 +46,7 @@ export default function DashboardComponent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://0.0.0.0:8000/cryptos/data')
+        const response = await fetch(`${DOMAIN}/cryptos/data`)
         const data = await response.json()
         setCryptoData(data)
         setFilteredData(prevFiltered => {

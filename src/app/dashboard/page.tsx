@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DOMAIN } from '../config'
 
 interface CalculatedStats {
   prices: {
@@ -56,7 +57,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://0.0.0.0:8000/cryptos/data')
+        const response = await fetch(`${DOMAIN}/cryptos/data`)
         const data = await response.json()
         setCryptoData(data)
         setFilteredData(prevFiltered => {

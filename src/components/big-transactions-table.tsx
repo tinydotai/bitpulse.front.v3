@@ -15,6 +15,7 @@ import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns'
 import { ArrowRight } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
+import { WS_DOMAIN } from '@/app/config'
 
 interface Transaction {
   _id: string
@@ -47,7 +48,7 @@ export function BigTransactionsTableComponent({ cryptoPair, source }: BigTransac
 
     const sourceParam = source !== 'all' ? `?source=${source}` : ''
     ws.current = new WebSocket(
-      `ws://localhost:8000/whales/ws/big_transactions/${cryptoPair}${sourceParam}`
+      `${WS_DOMAIN}/whales/ws/big_transactions/${cryptoPair}${sourceParam}`
     )
 
     ws.current.onopen = () => {

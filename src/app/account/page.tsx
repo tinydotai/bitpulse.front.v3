@@ -18,6 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { DOMAIN } from '../config'
 
 interface EditedUser {
   email: string
@@ -89,7 +90,7 @@ export default function AccountPage() {
         formData.append('current_password', editedUser.currentPassword)
         formData.append('new_password', editedUser.newPassword)
 
-        await axios.post('http://localhost:8000/jwt/change-password', formData, {
+        await axios.post(`${DOMAIN}/jwt/change-password`, formData, {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             Authorization: `Bearer ${localStorage.getItem('token')}`,

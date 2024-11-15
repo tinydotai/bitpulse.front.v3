@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react'
 import axios from 'axios'
-
+import { DOMAIN } from '@/app/config'
 interface User {
   email: string
   username: string
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem('token')
       if (token) {
         try {
-          const response = await axios.get('http://localhost:8000/auth/me', {
+          const response = await axios.get(`${DOMAIN}/auth/me`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string) => {
     try {
       const response = await axios.post(
-        'http://localhost:8000/jwt/login',
+        `${DOMAIN}/jwt/login`,
         new URLSearchParams({
           username,
           password,
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { access_token } = response.data
       localStorage.setItem('token', access_token)
       setIsAuthenticated(true)
-      const userResponse = await axios.get('http://localhost:8000/auth/me', {
+      const userResponse = await axios.get(`${DOMAIN}/auth/me`, {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
