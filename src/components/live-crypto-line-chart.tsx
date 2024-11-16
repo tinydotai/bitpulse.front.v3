@@ -11,7 +11,7 @@ import {
   AreaData,
   HistogramData,
 } from 'lightweight-charts'
-import { Wifi, WifiOff } from 'lucide-react'
+import { Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -48,6 +48,9 @@ const DEFAULT_INTERVAL = 60
 
 export default function LiveCryptoLineChartComponent({ cryptoPair, source }: LiveCryptoChartProps) {
   const [isConnected, setIsConnected] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [hasData, setHasData] = useState(false)
+  const isInitialDataFetch = useRef(true)
   const intervalRef = useRef(DEFAULT_INTERVAL)
   const [intervalState, setIntervalState] = useState(DEFAULT_INTERVAL)
   const ws = useRef<WebSocket | null>(null)
@@ -95,6 +98,12 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
           value: formattedData.sellVolume,
         } as HistogramData<Time>)
       }
+
+      if (isInitialDataFetch.current) {
+        setInitialLoading(false)
+        isInitialDataFetch.current = false
+      }
+      setHasData(true)
     },
     [formatToChartData]
   )
@@ -112,6 +121,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     areaSeries.current.setData([])
     buyVolumeSeries.current.setData([])
     sellVolumeSeries.current.setData([])
+    setHasData(false)
   }, [])
 
   const heartbeat = useCallback(() => {
@@ -164,6 +174,20 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
 
     ws.current.onerror = () => {
       setIsConnected(false)
+      if (isInitialDataFetch.current) {
+        setInitialLoading(false)
+        isInitialDataFetch.current = false
+      }
+    }
+
+    // Set a timeout for initial loading state
+    if (isInitialDataFetch.current) {
+      setTimeout(() => {
+        if (isInitialDataFetch.current) {
+          setInitialLoading(false)
+          isInitialDataFetch.current = false
+        }
+      }, 10000) // 10 seconds timeout for initial load
     }
   }, [cryptoPair, heartbeat, addDataPoint, timezone])
 
@@ -325,7 +349,19 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
             </div>
           </div>
         </div>
-        <div ref={chartContainerRef} className="w-full h-[420px]" />
+        <div className="relative">
+          <div ref={chartContainerRef} className="w-full h-[420px]" />
+          {initialLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {!initialLoading && !hasData && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-muted-foreground">No data available</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
