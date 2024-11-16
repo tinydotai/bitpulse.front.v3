@@ -13,13 +13,6 @@ import {
 } from 'lightweight-charts'
 import { Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { WS_DOMAIN } from '@/app/config'
 
 interface WebSocketMessage {
@@ -43,7 +36,12 @@ interface ChartData {
   sellVolume: number
 }
 
-const INTERVALS = [1, 10, 30, 60]
+const INTERVALS = [
+  { value: '1', label: '1s' },
+  { value: '10', label: '10s' },
+  { value: '30', label: '30s' },
+  { value: '60', label: '1m' },
+]
 const DEFAULT_INTERVAL = 60
 
 export default function LiveCryptoLineChartComponent({ cryptoPair, source }: LiveCryptoChartProps) {
@@ -305,13 +303,11 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
 
   const handleIntervalChange = (newInterval: string) => {
     const parsedInterval = parseInt(newInterval)
-    if (INTERVALS.includes(parsedInterval)) {
-      intervalRef.current = parsedInterval
-      setIntervalState(parsedInterval)
-      setIsLoading(true)
-      clearChartData()
-      connectWebSocket()
-    }
+    intervalRef.current = parsedInterval
+    setIntervalState(parsedInterval)
+    setIsLoading(true)
+    clearChartData()
+    connectWebSocket()
   }
 
   useEffect(() => {
@@ -334,34 +330,44 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     }
   }, [connectWebSocket, initChart, handleResize])
 
+  useEffect(() => {
+    currentSource.current = source
+    clearChartData()
+    connectWebSocket()
+  }, [source, connectWebSocket, clearChartData])
+
   return (
     <Card className="w-full bg-background">
       <CardHeader className="space-y-2">
         <CardTitle className="flex items-center justify-between text-lg">
-          <span>Buy/Sell Volumes</span>
-          <div className="flex items-center space-x-2">
+          <span className="hidden md:inline">Buy/Sell Volumes</span>
+          <div className="flex items-center gap-2">
             {isConnected ? (
               <Wifi className="text-green-500 w-4 h-4" />
             ) : (
               <WifiOff className="text-red-500 w-4 h-4" />
             )}
-            <Select value={intervalState.toString()} onValueChange={handleIntervalChange}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Select interval" />
-              </SelectTrigger>
-              <SelectContent>
-                {INTERVALS.map(i => (
-                  <SelectItem key={i} value={i.toString()}>
-                    {i}s
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Horizontal interval buttons */}
+            <div className="flex gap-1">
+              {INTERVALS.map(interval => (
+                <button
+                  key={interval.value}
+                  onClick={() => handleIntervalChange(interval.value)}
+                  className={`px-2 py-1 text-xs rounded hover:bg-secondary transition-colors
+                    ${
+                      intervalState.toString() === interval.value
+                        ? 'bg-secondary text-secondary-foreground'
+                        : 'text-muted-foreground'
+                    }`}
+                >
+                  {interval.label}
+                </button>
+              ))}
+            </div>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Legend visible only on md (768px) and above screens */}
         <div className="hidden md:block mb-4 p-2 bg-secondary/10 rounded-md">
           <div className="flex gap-4 items-center justify-start text-sm">
             <div className="flex items-center">
