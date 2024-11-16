@@ -11,7 +11,7 @@ import {
   AreaData,
   HistogramData,
 } from 'lightweight-charts'
-import { Wifi, WifiOff, Loader2, ChevronDown } from 'lucide-react'
+import { Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -50,7 +50,6 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasData, setHasData] = useState(false)
-  const [showLegend, setShowLegend] = useState(false)
   const isInitialDataFetch = useRef(true)
   const intervalRef = useRef(DEFAULT_INTERVAL)
   const [intervalState, setIntervalState] = useState(DEFAULT_INTERVAL)
@@ -360,19 +359,11 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
             </Select>
           </div>
         </CardTitle>
-        <div className="text-sm text-muted-foreground flex items-center justify-between">
-          <span>Limited data available</span>
-          <button className="text-primary hover:underline">upgrade to premium</button>
-        </div>
       </CardHeader>
       <CardContent>
-        <div
-          className="relative mb-2 flex items-center justify-center"
-          onClick={() => setShowLegend(!showLegend)}
-        >
-          <div
-            className={`flex flex-col items-start space-y-2 text-sm ${showLegend ? '' : 'hidden'}`}
-          >
+        {/* Legend visible only on md (768px) and above screens */}
+        <div className="hidden md:block mb-4 p-2 bg-secondary/10 rounded-md">
+          <div className="flex gap-4 items-center justify-start text-sm">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-[#26a69a] rounded-sm mr-2" />
               <span>Buy Volume</span>
@@ -386,10 +377,8 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
               <span>Price</span>
             </div>
           </div>
-          <ChevronDown
-            className={`w-4 h-4 transition-transform ${showLegend ? 'rotate-180' : ''}`}
-          />
         </div>
+
         <div className="relative">
           <div ref={chartContainerRef} className="w-full" />
           {isLoading && (
@@ -399,7 +388,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
           )}
           {!isLoading && !hasData && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-muted-foreground">No data available</p>
+              <p className="text-muted-foreground">Loading...</p>
             </div>
           )}
         </div>
