@@ -10,6 +10,7 @@ import {
   Time,
   AreaData,
   HistogramData,
+  SeriesDataItemTypeMap,
 } from 'lightweight-charts'
 import { Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,6 +37,12 @@ interface ChartData {
   sellVolume: number
 }
 
+interface PriceTooltipData {
+  price: number
+  buyVolume: number
+  sellVolume: number
+}
+
 const INTERVALS = [
   { value: '1', label: '1s' },
   { value: '10', label: '10s' },
@@ -48,6 +55,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasData, setHasData] = useState(false)
+  const [tooltipData, setTooltipData] = useState<PriceTooltipData | null>(null)
   const isInitialDataFetch = useRef(true)
   const intervalRef = useRef(DEFAULT_INTERVAL)
   const [intervalState, setIntervalState] = useState(DEFAULT_INTERVAL)
@@ -271,6 +279,30 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       priceScaleId: 'left',
     })
 
+    chart.current.subscribeCrosshairMove(param => {
+      if (param.time && areaSeries.current && buyVolumeSeries.current && sellVolumeSeries.current) {
+        // Get the data from each series with proper type casting
+        const priceData = param.seriesData.get(areaSeries.current)
+        const buyData = param.seriesData.get(buyVolumeSeries.current)
+        const sellData = param.seriesData.get(sellVolumeSeries.current)
+
+        // Type guard to check if the data points exist and have the correct shape
+        const hasPrice = priceData && 'value' in priceData
+        const hasBuy = buyData && 'value' in buyData
+        const hasSell = sellData && 'value' in sellData
+
+        if (hasPrice || hasBuy || hasSell) {
+          setTooltipData({
+            price: hasPrice ? (priceData as { value: number }).value : 0,
+            buyVolume: hasBuy ? (buyData as { value: number }).value : 0,
+            sellVolume: hasSell ? (sellData as { value: number }).value : 0,
+          })
+        }
+      } else {
+        setTooltipData(null)
+      }
+    })
+
     if (areaSeries.current) {
       areaSeries.current.priceScale().applyOptions({
         scaleMargins: {
@@ -340,14 +372,40 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     <Card className="w-full bg-background">
       <CardHeader className="space-y-2">
         <CardTitle className="flex items-center justify-between text-lg">
-          <span className="hidden md:inline">Buy/Sell Volumes</span>
+          <div className="flex items-center gap-4">
+            <span className="hidden md:inline">Buy/Sell Volumes</span>
+            {tooltipData && (
+              <div className="flex gap-4 text-sm">
+                <span className="text-[#4299e1]">
+                  $
+                  {tooltipData.price.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+                <span className="text-[#26a69a]">
+                  Buys: $
+                  {tooltipData.buyVolume.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+                <span className="text-[#ef5350]">
+                  Sells: $
+                  {tooltipData.sellVolume.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {isConnected ? (
               <Wifi className="text-green-500 w-4 h-4" />
             ) : (
               <WifiOff className="text-red-500 w-4 h-4" />
             )}
-            {/* Horizontal interval buttons */}
             <div className="flex gap-1">
               {INTERVALS.map(interval => (
                 <button
