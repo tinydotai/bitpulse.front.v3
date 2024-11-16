@@ -1,15 +1,7 @@
+'use client'
+
 import React, { useEffect, useState, useRef, useCallback } from 'react'
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
+import { createChart, ColorType, CrosshairMode } from 'lightweight-charts'
 import { Wifi, WifiOff } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -46,59 +38,126 @@ const INTERVALS = [1, 10, 30, 60]
 const DEFAULT_INTERVAL = 60
 
 export default function LiveCryptoLineChartComponent({ cryptoPair, source }: LiveCryptoChartProps) {
-  const [data, setData] = useState<DataPoint[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const intervalRef = useRef(DEFAULT_INTERVAL)
   const [intervalState, setIntervalState] = useState(DEFAULT_INTERVAL)
   const ws = useRef<WebSocket | null>(null)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+  const chart = useRef<any>(null)
+  const areaSeries = useRef<any>(null)
+  const buyVolumeSeries = useRef<any>(null)
+  const sellVolumeSeries = useRef<any>(null)
   const pingInterval = useRef<NodeJS.Timeout | null>(null)
   const pingTimeout = useRef<NodeJS.Timeout | null>(null)
   const currentSource = useRef(source)
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
-  // Update currentSource ref when source prop changes
-  useEffect(() => {
-    if (currentSource.current !== source) {
-      currentSource.current = source
-      // Clear data and reconnect when source changes
-      setData([])
-      connectWebSocket()
-    }
-  }, [source])
-
-  const addDataPoint = useCallback((newDataPoint: DataPoint) => {
-    setData(prevData => {
-      const existingIndex = prevData.findIndex(point => point.timestamp === newDataPoint.timestamp)
-      if (existingIndex !== -1) {
-        const updatedData = [...prevData]
-        updatedData[existingIndex] = newDataPoint
-        return updatedData.slice(-60)
-      } else {
-        return [...prevData, newDataPoint].slice(-60)
-      }
-    })
-  }, [])
-
-  const formatCurrency = useCallback((value: number) => {
-    if (value >= 1) {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
-    } else if (value >= 0.01) {
-      return `$${value.toFixed(5)}`
-    } else if (value >= 0.0001) {
-      return `$${value.toFixed(7)}`
-    } else {
-      return `$${value.toExponential(2)}`
+  const formatToChartData = useCallback((dataPoint: WebSocketMessage) => {
+    const time = new Date(dataPoint.timestamp).getTime() / 1000
+    return {
+      time,
+      price: dataPoint.avg_price,
+      buyVolume: dataPoint.buy_total_value,
+      sellVolume: dataPoint.sell_total_value,
     }
   }, [])
 
-  const formatTooltipValue = useCallback(
-    (value: number, name: string) => {
-      if (name === 'Price') {
-        return [formatCurrency(value), name]
+  const initChart = useCallback(() => {
+    if (chartContainerRef.current) {
+      chart.current = createChart(chartContainerRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: 'transparent' },
+          textColor: '#888888',
+        },
+        grid: {
+          vertLines: { color: '#2d3748' },
+          horzLines: { color: '#2d3748' },
+        },
+        crosshair: {
+          mode: CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: '#2d3748',
+          visible: true,
+        },
+        leftPriceScale: {
+          borderColor: '#2d3748',
+          visible: true,
+        },
+        timeScale: {
+          borderColor: '#2d3748',
+          timeVisible: true,
+          secondsVisible: true,
+        },
+      })
+
+      // Area series for price (right scale)
+      areaSeries.current = chart.current.addAreaSeries({
+        topColor: 'rgba(66, 153, 225, 0.56)',
+        bottomColor: 'rgba(66, 153, 225, 0.04)',
+        lineColor: 'rgba(66, 153, 225, 1)',
+        lineWidth: 2,
+        priceScaleId: 'right',
+      })
+
+      // Histogram series for buy volume (left scale)
+      buyVolumeSeries.current = chart.current.addHistogramSeries({
+        color: '#26a69a',
+        priceFormat: {
+          type: 'volume',
+        },
+        priceScaleId: 'left',
+      })
+
+      // Histogram series for sell volume (left scale)
+      sellVolumeSeries.current = chart.current.addHistogramSeries({
+        color: '#ef5350',
+        priceFormat: {
+          type: 'volume',
+        },
+        priceScaleId: 'left',
+      })
+
+      // Configure scales
+      areaSeries.current.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.4,
+        },
+      })
+
+      buyVolumeSeries.current.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.7,
+          bottom: 0,
+        },
+      })
+
+      sellVolumeSeries.current.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.7,
+          bottom: 0,
+        },
+      })
+
+      chart.current.timeScale().fitContent()
+    }
+  }, [])
+
+  const addDataPoint = useCallback(
+    (newDataPoint: WebSocketMessage) => {
+      const formattedData = formatToChartData(newDataPoint)
+
+      if (areaSeries.current && buyVolumeSeries.current && sellVolumeSeries.current) {
+        areaSeries.current.update({ time: formattedData.time, value: formattedData.price })
+        buyVolumeSeries.current.update({ time: formattedData.time, value: formattedData.buyVolume })
+        sellVolumeSeries.current.update({
+          time: formattedData.time,
+          value: formattedData.sellVolume,
+        })
       }
-      return [`$${Math.round(value).toLocaleString()}`, name]
     },
-    [formatCurrency]
+    [formatToChartData]
   )
 
   const heartbeat = useCallback(() => {
@@ -117,7 +176,6 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       ws.current.close()
     }
 
-    // Construct URL with source and timezone parameters
     const queryParams = [
       currentSource.current !== 'all' ? `source=${currentSource.current}` : null,
       `timezone_str=${timezone}`,
@@ -128,12 +186,9 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     const baseUrl = `${WS_DOMAIN}/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}`
     const fullUrl = queryParams ? `${baseUrl}?${queryParams}` : baseUrl
 
-    console.log(`Connecting WebSocket with interval: ${intervalRef.current} and URL: ${fullUrl}`)
-
     ws.current = new WebSocket(fullUrl)
 
     ws.current.onopen = () => {
-      console.log('WebSocket connected')
       setIsConnected(true)
       heartbeat()
     }
@@ -144,30 +199,22 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
         heartbeat()
       } else if (Array.isArray(message) && message.length > 0) {
         message.forEach((item: WebSocketMessage) => {
-          // Parse timestamp in local timezone since server sends timezone-adjusted time
-          const newDataPoint = {
-            timestamp: new Date(item.timestamp).toLocaleTimeString('en-US', { hour12: false }),
-            price: item.avg_price,
-            totalBuyValue: item.buy_total_value,
-            totalSellValue: item.sell_total_value,
-          }
-          addDataPoint(newDataPoint)
+          addDataPoint(item)
         })
       }
     }
 
     ws.current.onclose = () => {
-      console.log('WebSocket disconnected')
       setIsConnected(false)
     }
 
-    ws.current.onerror = error => {
-      console.error('WebSocket error:', error)
+    ws.current.onerror = () => {
       setIsConnected(false)
     }
   }, [cryptoPair, heartbeat, addDataPoint, timezone])
 
   useEffect(() => {
+    initChart()
     connectWebSocket()
 
     pingInterval.current = setInterval(() => {
@@ -180,33 +227,23 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       if (pingInterval.current) clearInterval(pingInterval.current)
       if (pingTimeout.current) clearTimeout(pingTimeout.current)
       if (ws.current) ws.current.close()
+      if (chart.current) chart.current.remove()
     }
-  }, [connectWebSocket])
-
-  const formatXAxis = useCallback((tickItem: string) => {
-    return tickItem
-  }, [])
+  }, [connectWebSocket, initChart])
 
   const handleIntervalChange = (newInterval: string) => {
     const parsedInterval = parseInt(newInterval)
     if (INTERVALS.includes(parsedInterval)) {
-      console.log(`Changing interval to: ${parsedInterval}`)
       intervalRef.current = parsedInterval
       setIntervalState(parsedInterval)
-      setData([]) // Clear existing data when interval changes
-      connectWebSocket() // Reconnect with new interval
+      if (chart.current) {
+        areaSeries.current.setData([])
+        buyVolumeSeries.current.setData([])
+        sellVolumeSeries.current.setData([])
+      }
+      connectWebSocket()
     }
   }
-
-  const calculatePriceDomain = useCallback(() => {
-    if (data.length === 0) return [0, 1] // Default domain if no data
-    const prices = data.map(d => d.price)
-    const minPrice = Math.min(...prices)
-    const maxPrice = Math.max(...prices)
-    const maxPadding = maxPrice * 0.001 // 0.1% padding
-    const minPadding = minPrice * 0.001 // 0.1% padding
-    return [minPrice - minPadding, maxPrice + maxPadding]
-  }, [data])
 
   return (
     <Card className="w-full bg-background">
@@ -238,79 +275,23 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="w-full h-[420px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 20, right: 60, left: 60, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-              <XAxis
-                dataKey="timestamp"
-                stroke="#888"
-                tick={{ fill: '#888' }}
-                tickFormatter={formatXAxis}
-                minTickGap={50}
-              />
-              <YAxis
-                yAxisId="left"
-                stroke="#888"
-                tick={{ fill: '#888' }}
-                tickFormatter={value => `$${Math.round(value).toLocaleString()}`}
-                label={{
-                  value: 'Total Value',
-                  angle: -90,
-                  position: 'insideLeft',
-                  fill: '#888',
-                  offset: -45,
-                }}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                stroke="#4299e1"
-                tick={{ fill: '#4299e1' }}
-                tickFormatter={formatCurrency}
-                label={{
-                  value: 'Price',
-                  angle: 90,
-                  position: 'insideRight',
-                  fill: '#4299e1',
-                  offset: -45,
-                }}
-                domain={calculatePriceDomain()}
-              />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #2d3748' }}
-                labelStyle={{ color: '#888' }}
-                itemStyle={{ color: '#e2e8f0' }}
-                formatter={formatTooltipValue}
-              />
-              <Legend verticalAlign="top" height={36} />
-              <Bar
-                dataKey="totalBuyValue"
-                fill="#48bb78"
-                yAxisId="left"
-                name="Total Buy Value"
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="totalSellValue"
-                fill="#f56565"
-                yAxisId="left"
-                name="Total Sell Value"
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="price"
-                stroke="#4299e1"
-                dot={false}
-                strokeWidth={2}
-                yAxisId="right"
-                name="Price"
-                isAnimationActive={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+        <div className="mb-4">
+          <div className="flex items-center justify-end space-x-4 text-sm">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-[#26a69a] rounded-sm mr-2" />
+              <span>Total Buy Value</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-[#ef5350] rounded-sm mr-2" />
+              <span>Total Sell Value</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-[#4299e1] rounded-sm mr-2" />
+              <span>Price</span>
+            </div>
+          </div>
         </div>
+        <div ref={chartContainerRef} className="w-full h-[420px]" />
       </CardContent>
     </Card>
   )
