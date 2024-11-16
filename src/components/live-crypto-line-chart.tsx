@@ -354,7 +354,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
           )}
           {!isLoading && !hasData && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-muted-foreground">No data available</p>
+              <p className="text-muted-foreground">Loading...</p>
             </div>
           )}
         </div>
