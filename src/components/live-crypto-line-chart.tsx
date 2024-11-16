@@ -48,7 +48,7 @@ const DEFAULT_INTERVAL = 60
 
 export default function LiveCryptoLineChartComponent({ cryptoPair, source }: LiveCryptoChartProps) {
   const [isConnected, setIsConnected] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [hasData, setHasData] = useState(false)
   const isInitialDataFetch = useRef(true)
   const intervalRef = useRef(DEFAULT_INTERVAL)
@@ -99,10 +99,8 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
         } as HistogramData<Time>)
       }
 
-      if (isInitialDataFetch.current) {
-        setInitialLoading(false)
-        isInitialDataFetch.current = false
-      }
+      setIsLoading(false)
+      isInitialDataFetch.current = false
       setHasData(true)
     },
     [formatToChartData]
@@ -122,6 +120,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     buyVolumeSeries.current.setData([])
     sellVolumeSeries.current.setData([])
     setHasData(false)
+    setIsLoading(true) // Set loading state when clearing data
   }, [])
 
   const heartbeat = useCallback(() => {
@@ -174,21 +173,17 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
 
     ws.current.onerror = () => {
       setIsConnected(false)
-      if (isInitialDataFetch.current) {
-        setInitialLoading(false)
-        isInitialDataFetch.current = false
-      }
+      setIsLoading(false)
+      isInitialDataFetch.current = false
     }
 
-    // Set a timeout for initial loading state
-    if (isInitialDataFetch.current) {
-      setTimeout(() => {
-        if (isInitialDataFetch.current) {
-          setInitialLoading(false)
-          isInitialDataFetch.current = false
-        }
-      }, 10000) // 10 seconds timeout for initial load
-    }
+    // Set a timeout for loading state
+    const loadingTimeout = setTimeout(() => {
+      setIsLoading(false)
+      isInitialDataFetch.current = false
+    }, 10000) // 10 seconds timeout
+
+    return () => clearTimeout(loadingTimeout)
   }, [cryptoPair, heartbeat, addDataPoint, timezone])
 
   const initChart = useCallback(() => {
@@ -280,6 +275,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     if (INTERVALS.includes(parsedInterval)) {
       intervalRef.current = parsedInterval
       setIntervalState(parsedInterval)
+      setIsLoading(true) // Set loading state when changing interval
       clearChartData()
       connectWebSocket()
     }
@@ -351,12 +347,12 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
         </div>
         <div className="relative">
           <div ref={chartContainerRef} className="w-full h-[420px]" />
-          {initialLoading && (
+          {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           )}
-          {!initialLoading && !hasData && (
+          {!isLoading && !hasData && (
             <div className="absolute inset-0 flex items-center justify-center">
               <p className="text-muted-foreground">No data available</p>
             </div>
