@@ -42,11 +42,13 @@ export default function DashboardComponent() {
   const [cryptoData, setCryptoData] = useState<CryptoCurrency[]>([])
   const [filteredData, setFilteredData] = useState<CryptoCurrency[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  // Get user's timezone automatically
+  const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${DOMAIN}/cryptos/data`)
+        const response = await fetch(`${DOMAIN}/cryptos/data?timezone_str=${timezone}`)
         const data = await response.json()
         setCryptoData(data)
         setFilteredData(prevFiltered => {
@@ -68,7 +70,7 @@ export default function DashboardComponent() {
 
     // Cleanup function to clear interval when component unmounts
     return () => clearInterval(intervalId)
-  }, [searchTerm]) // Add searchTerm as dependency to prevent unnecessary filtered data updates
+  }, [searchTerm, timezone]) // Added timezone as dependency
 
   useEffect(() => {
     const filtered = cryptoData.filter(

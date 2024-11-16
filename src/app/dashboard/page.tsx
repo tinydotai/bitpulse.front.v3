@@ -53,11 +53,13 @@ export default function Dashboard() {
   const [filteredData, setFilteredData] = useState<CryptoCurrency[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [sortOption, setSortOption] = useState<SortOption>('market_cap')
+  // Get user's timezone automatically
+  const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${DOMAIN}/cryptos/data`)
+        const response = await fetch(`${DOMAIN}/cryptos/data?timezone_str=${timezone}`)
         const data = await response.json()
         setCryptoData(data)
         setFilteredData(prevFiltered => {
@@ -82,7 +84,7 @@ export default function Dashboard() {
 
     // Cleanup function
     return () => clearInterval(intervalId)
-  }, [searchTerm, sortOption]) // Add dependencies to prevent stale closures
+  }, [searchTerm, sortOption, timezone])
 
   useEffect(() => {
     const filtered = cryptoData.filter(
