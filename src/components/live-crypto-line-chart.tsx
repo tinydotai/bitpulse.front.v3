@@ -1,7 +1,16 @@
 'use client'
 
 import React, { useEffect, useState, useRef, useCallback } from 'react'
-import { createChart, ColorType, CrosshairMode } from 'lightweight-charts'
+import {
+  createChart,
+  ColorType,
+  CrosshairMode,
+  IChartApi,
+  ISeriesApi,
+  Time,
+  AreaData,
+  HistogramData,
+} from 'lightweight-charts'
 import { Wifi, WifiOff } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -12,13 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { WS_DOMAIN } from '@/app/config'
-
-type DataPoint = {
-  timestamp: string
-  price: number
-  totalBuyValue: number
-  totalSellValue: number
-}
 
 interface WebSocketMessage {
   timestamp: string
@@ -34,6 +36,13 @@ interface LiveCryptoChartProps {
   source: string
 }
 
+interface ChartData {
+  time: Time
+  price: number
+  buyVolume: number
+  sellVolume: number
+}
+
 const INTERVALS = [1, 10, 30, 60]
 const DEFAULT_INTERVAL = 60
 
@@ -43,17 +52,17 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const [intervalState, setIntervalState] = useState(DEFAULT_INTERVAL)
   const ws = useRef<WebSocket | null>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chart = useRef<any>(null)
-  const areaSeries = useRef<any>(null)
-  const buyVolumeSeries = useRef<any>(null)
-  const sellVolumeSeries = useRef<any>(null)
+  const chart = useRef<IChartApi | null>(null)
+  const areaSeries = useRef<ISeriesApi<'Area'> | null>(null)
+  const buyVolumeSeries = useRef<ISeriesApi<'Histogram'> | null>(null)
+  const sellVolumeSeries = useRef<ISeriesApi<'Histogram'> | null>(null)
   const pingInterval = useRef<NodeJS.Timeout | null>(null)
   const pingTimeout = useRef<NodeJS.Timeout | null>(null)
   const currentSource = useRef(source)
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
-  const formatToChartData = useCallback((dataPoint: WebSocketMessage) => {
-    const time = new Date(dataPoint.timestamp).getTime() / 1000
+  const formatToChartData = useCallback((dataPoint: WebSocketMessage): ChartData => {
+    const time = (new Date(dataPoint.timestamp).getTime() / 1000) as Time
     return {
       time,
       price: dataPoint.avg_price,
@@ -62,103 +71,48 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     }
   }, [])
 
-  const initChart = useCallback(() => {
-    if (chartContainerRef.current) {
-      chart.current = createChart(chartContainerRef.current, {
-        layout: {
-          background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#888888',
-        },
-        grid: {
-          vertLines: { color: '#2d3748' },
-          horzLines: { color: '#2d3748' },
-        },
-        crosshair: {
-          mode: CrosshairMode.Normal,
-        },
-        rightPriceScale: {
-          borderColor: '#2d3748',
-          visible: true,
-        },
-        leftPriceScale: {
-          borderColor: '#2d3748',
-          visible: true,
-        },
-        timeScale: {
-          borderColor: '#2d3748',
-          timeVisible: true,
-          secondsVisible: true,
-        },
-      })
-
-      // Area series for price (right scale)
-      areaSeries.current = chart.current.addAreaSeries({
-        topColor: 'rgba(66, 153, 225, 0.56)',
-        bottomColor: 'rgba(66, 153, 225, 0.04)',
-        lineColor: 'rgba(66, 153, 225, 1)',
-        lineWidth: 2,
-        priceScaleId: 'right',
-      })
-
-      // Histogram series for buy volume (left scale)
-      buyVolumeSeries.current = chart.current.addHistogramSeries({
-        color: '#26a69a',
-        priceFormat: {
-          type: 'volume',
-        },
-        priceScaleId: 'left',
-      })
-
-      // Histogram series for sell volume (left scale)
-      sellVolumeSeries.current = chart.current.addHistogramSeries({
-        color: '#ef5350',
-        priceFormat: {
-          type: 'volume',
-        },
-        priceScaleId: 'left',
-      })
-
-      // Configure scales
-      areaSeries.current.priceScale().applyOptions({
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.4,
-        },
-      })
-
-      buyVolumeSeries.current.priceScale().applyOptions({
-        scaleMargins: {
-          top: 0.7,
-          bottom: 0,
-        },
-      })
-
-      sellVolumeSeries.current.priceScale().applyOptions({
-        scaleMargins: {
-          top: 0.7,
-          bottom: 0,
-        },
-      })
-
-      chart.current.timeScale().fitContent()
-    }
-  }, [])
-
   const addDataPoint = useCallback(
     (newDataPoint: WebSocketMessage) => {
       const formattedData = formatToChartData(newDataPoint)
 
-      if (areaSeries.current && buyVolumeSeries.current && sellVolumeSeries.current) {
-        areaSeries.current.update({ time: formattedData.time, value: formattedData.price })
-        buyVolumeSeries.current.update({ time: formattedData.time, value: formattedData.buyVolume })
+      if (areaSeries.current) {
+        areaSeries.current.update({
+          time: formattedData.time,
+          value: formattedData.price,
+        } as AreaData<Time>)
+      }
+
+      if (buyVolumeSeries.current) {
+        buyVolumeSeries.current.update({
+          time: formattedData.time,
+          value: formattedData.buyVolume,
+        } as HistogramData<Time>)
+      }
+
+      if (sellVolumeSeries.current) {
         sellVolumeSeries.current.update({
           time: formattedData.time,
           value: formattedData.sellVolume,
-        })
+        } as HistogramData<Time>)
       }
     },
     [formatToChartData]
   )
+
+  const clearChartData = useCallback(() => {
+    if (
+      !chart.current ||
+      !areaSeries.current ||
+      !buyVolumeSeries.current ||
+      !sellVolumeSeries.current
+    ) {
+      return
+    }
+
+    areaSeries.current.setData([])
+    buyVolumeSeries.current.setData([])
+    sellVolumeSeries.current.setData([])
+  }, [])
 
   const heartbeat = useCallback(() => {
     if (pingTimeout.current) clearTimeout(pingTimeout.current)
@@ -213,6 +167,100 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     }
   }, [cryptoPair, heartbeat, addDataPoint, timezone])
 
+  const initChart = useCallback(() => {
+    if (!chartContainerRef.current) return
+
+    chart.current = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#888888',
+      },
+      grid: {
+        vertLines: { color: '#2d3748' },
+        horzLines: { color: '#2d3748' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      rightPriceScale: {
+        borderColor: '#2d3748',
+        visible: true,
+      },
+      leftPriceScale: {
+        borderColor: '#2d3748',
+        visible: true,
+      },
+      timeScale: {
+        borderColor: '#2d3748',
+        timeVisible: true,
+        secondsVisible: true,
+      },
+    })
+
+    areaSeries.current = chart.current.addAreaSeries({
+      topColor: 'rgba(66, 153, 225, 0.56)',
+      bottomColor: 'rgba(66, 153, 225, 0.04)',
+      lineColor: 'rgba(66, 153, 225, 1)',
+      lineWidth: 2,
+      priceScaleId: 'right',
+    })
+
+    buyVolumeSeries.current = chart.current.addHistogramSeries({
+      color: '#26a69a',
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: 'left',
+    })
+
+    sellVolumeSeries.current = chart.current.addHistogramSeries({
+      color: '#ef5350',
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: 'left',
+    })
+
+    if (areaSeries.current) {
+      areaSeries.current.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.4,
+        },
+      })
+    }
+
+    if (buyVolumeSeries.current) {
+      buyVolumeSeries.current.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.7,
+          bottom: 0,
+        },
+      })
+    }
+
+    if (sellVolumeSeries.current) {
+      sellVolumeSeries.current.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.7,
+          bottom: 0,
+        },
+      })
+    }
+
+    chart.current.timeScale().fitContent()
+  }, [])
+
+  const handleIntervalChange = (newInterval: string) => {
+    const parsedInterval = parseInt(newInterval)
+    if (INTERVALS.includes(parsedInterval)) {
+      intervalRef.current = parsedInterval
+      setIntervalState(parsedInterval)
+      clearChartData()
+      connectWebSocket()
+    }
+  }
+
   useEffect(() => {
     initChart()
     connectWebSocket()
@@ -230,20 +278,6 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       if (chart.current) chart.current.remove()
     }
   }, [connectWebSocket, initChart])
-
-  const handleIntervalChange = (newInterval: string) => {
-    const parsedInterval = parseInt(newInterval)
-    if (INTERVALS.includes(parsedInterval)) {
-      intervalRef.current = parsedInterval
-      setIntervalState(parsedInterval)
-      if (chart.current) {
-        areaSeries.current.setData([])
-        buyVolumeSeries.current.setData([])
-        sellVolumeSeries.current.setData([])
-      }
-      connectWebSocket()
-    }
-  }
 
   return (
     <Card className="w-full bg-background">
