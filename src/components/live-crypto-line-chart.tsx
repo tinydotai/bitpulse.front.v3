@@ -63,9 +63,10 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const pingTimeout = useRef<NodeJS.Timeout | null>(null)
   const currentSource = useRef(source)
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  const lastTimeRef = useRef<number | null>(null)
 
   const formatToChartData = useCallback((dataPoint: WebSocketMessage): ChartData => {
-    const time = (new Date(dataPoint.timestamp).getTime() / 1000) as Time
+    const time = Math.floor(new Date(dataPoint.timestamp).getTime() / 1000) as Time
     return {
       time,
       price: dataPoint.avg_price,
@@ -77,31 +78,42 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const addDataPoint = useCallback(
     (newDataPoint: WebSocketMessage) => {
       const formattedData = formatToChartData(newDataPoint)
+      const currentTime = Number(formattedData.time)
 
-      if (areaSeries.current) {
-        areaSeries.current.update({
-          time: formattedData.time,
-          value: formattedData.price,
-        } as AreaData<Time>)
+      // Skip if this data point is older than our last processed time
+      if (lastTimeRef.current !== null && currentTime <= lastTimeRef.current) {
+        return
       }
 
-      if (buyVolumeSeries.current) {
-        buyVolumeSeries.current.update({
-          time: formattedData.time,
-          value: formattedData.buyVolume,
-        } as HistogramData<Time>)
-      }
+      try {
+        if (areaSeries.current) {
+          areaSeries.current.update({
+            time: formattedData.time,
+            value: formattedData.price,
+          } as AreaData<Time>)
+        }
 
-      if (sellVolumeSeries.current) {
-        sellVolumeSeries.current.update({
-          time: formattedData.time,
-          value: formattedData.sellVolume,
-        } as HistogramData<Time>)
-      }
+        if (buyVolumeSeries.current) {
+          buyVolumeSeries.current.update({
+            time: formattedData.time,
+            value: formattedData.buyVolume,
+          } as HistogramData<Time>)
+        }
 
-      setIsLoading(false)
-      isInitialDataFetch.current = false
-      setHasData(true)
+        if (sellVolumeSeries.current) {
+          sellVolumeSeries.current.update({
+            time: formattedData.time,
+            value: formattedData.sellVolume,
+          } as HistogramData<Time>)
+        }
+
+        lastTimeRef.current = currentTime
+        setIsLoading(false)
+        isInitialDataFetch.current = false
+        setHasData(true)
+      } catch (error) {
+        console.warn('Error updating chart data:', error)
+      }
     },
     [formatToChartData]
   )
@@ -116,11 +128,12 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       return
     }
 
+    lastTimeRef.current = null // Reset the last time reference
     areaSeries.current.setData([])
     buyVolumeSeries.current.setData([])
     sellVolumeSeries.current.setData([])
     setHasData(false)
-    setIsLoading(true) // Set loading state when clearing data
+    setIsLoading(true)
   }, [])
 
   const heartbeat = useCallback(() => {
@@ -161,7 +174,11 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       if (message.type === 'pong') {
         heartbeat()
       } else if (Array.isArray(message) && message.length > 0) {
-        message.forEach((item: WebSocketMessage) => {
+        // Sort messages by timestamp before processing
+        const sortedMessages = [...message].sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        )
+        sortedMessages.forEach((item: WebSocketMessage) => {
           addDataPoint(item)
         })
       }
@@ -181,7 +198,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     const loadingTimeout = setTimeout(() => {
       setIsLoading(false)
       isInitialDataFetch.current = false
-    }, 10000) // 10 seconds timeout
+    }, 10000)
 
     return () => clearTimeout(loadingTimeout)
   }, [cryptoPair, heartbeat, addDataPoint, timezone])
