@@ -334,6 +334,10 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
                 ))}
               </SelectContent>
             </Select>
+            <span className="text-sm text-muted-foreground">
+              Limited data available -
+              <button className="text-primary hover:underline ml-1">upgrade to premium</button>
+            </span>
           </div>
           <span className="text-sm font-normal">
             {isConnected ? (
