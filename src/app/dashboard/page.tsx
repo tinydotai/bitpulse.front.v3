@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -53,7 +54,6 @@ export default function Dashboard() {
   const [filteredData, setFilteredData] = useState<CryptoCurrency[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [sortOption, setSortOption] = useState<SortOption>('market_cap')
-  // Get user's timezone automatically
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
   useEffect(() => {
@@ -220,16 +220,23 @@ export default function Dashboard() {
                     <Card className="hover:shadow-lg transition-shadow duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center space-x-2">
-                          <img
-                            src={crypto.image}
-                            alt={`${crypto.name} logo`}
-                            className="w-6 h-6 rounded-full"
-                            onError={e => {
-                              const target = e.target as HTMLImageElement
-                              target.onerror = null
-                              target.src = '/placeholder.svg?height=24&width=24'
-                            }}
-                          />
+                          <div className="relative w-6 h-6">
+                            <Image
+                              src={crypto.image}
+                              alt={`${crypto.name} logo`}
+                              fill
+                              className="rounded-full object-cover"
+                              sizes="24px"
+                              onError={() => {
+                                const fallbackImage = document.getElementById(
+                                  `crypto-image-${crypto.id}`
+                                ) as HTMLImageElement
+                                if (fallbackImage) {
+                                  fallbackImage.src = '/placeholder.svg'
+                                }
+                              }}
+                            />
+                          </div>
                           <span className="truncate">{crypto.name}</span>
                         </CardTitle>
                       </CardHeader>
