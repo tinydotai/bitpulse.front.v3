@@ -54,6 +54,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const pingInterval = useRef<NodeJS.Timeout | null>(null)
   const pingTimeout = useRef<NodeJS.Timeout | null>(null)
   const currentSource = useRef(source)
+  const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
   // Update currentSource ref when source prop changes
   useEffect(() => {
@@ -116,10 +117,16 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       ws.current.close()
     }
 
-    // Construct URL with source parameter only if it's not 'all'
-    const sourceParam = currentSource.current !== 'all' ? `source=${currentSource.current}` : ''
+    // Construct URL with source and timezone parameters
+    const queryParams = [
+      currentSource.current !== 'all' ? `source=${currentSource.current}` : null,
+      `timezone_str=${timezone}`,
+    ]
+      .filter(Boolean)
+      .join('&')
+
     const baseUrl = `${WS_DOMAIN}/stats/ws/transaction_stats/${cryptoPair}/${intervalRef.current}`
-    const fullUrl = sourceParam ? `${baseUrl}?${sourceParam}` : baseUrl
+    const fullUrl = queryParams ? `${baseUrl}?${queryParams}` : baseUrl
 
     console.log(`Connecting WebSocket with interval: ${intervalRef.current} and URL: ${fullUrl}`)
 
@@ -137,6 +144,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
         heartbeat()
       } else if (Array.isArray(message) && message.length > 0) {
         message.forEach((item: WebSocketMessage) => {
+          // Parse timestamp in local timezone since server sends timezone-adjusted time
           const newDataPoint = {
             timestamp: new Date(item.timestamp).toLocaleTimeString('en-US', { hour12: false }),
             price: item.avg_price,
@@ -157,7 +165,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       console.error('WebSocket error:', error)
       setIsConnected(false)
     }
-  }, [cryptoPair, heartbeat, addDataPoint])
+  }, [cryptoPair, heartbeat, addDataPoint, timezone])
 
   useEffect(() => {
     connectWebSocket()

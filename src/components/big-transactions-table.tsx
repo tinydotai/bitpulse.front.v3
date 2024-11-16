@@ -40,16 +40,22 @@ export function BigTransactionsTableComponent({ cryptoPair, source }: BigTransac
   const [, setUpdateTrigger] = useState(0)
   const ws = useRef<WebSocket | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  // Get user's timezone
+  const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
   const connectWebSocket = useCallback(() => {
     if (ws.current) {
       ws.current.close()
     }
 
-    const sourceParam = source !== 'all' ? `?source=${source}` : ''
-    ws.current = new WebSocket(
-      `${WS_DOMAIN}/whales/ws/big_transactions/${cryptoPair}${sourceParam}`
-    )
+    const sourceParam = source !== 'all' ? `source=${source}` : ''
+    const timeZoneParam = `timezone_str=${timezone}`
+    const queryParams = [sourceParam, timeZoneParam].filter(Boolean).join('&')
+    const wsUrl = `${WS_DOMAIN}/whales/ws/big_transactions/${cryptoPair}${
+      queryParams ? `?${queryParams}` : ''
+    }`
+
+    ws.current = new WebSocket(wsUrl)
 
     ws.current.onopen = () => {
       console.log('WebSocket connection established')
@@ -89,7 +95,7 @@ export function BigTransactionsTableComponent({ cryptoPair, source }: BigTransac
         clearInterval(intervalRef.current)
       }
     }
-  }, [cryptoPair, source])
+  }, [cryptoPair, source, timezone]) // Added timezone to dependencies
 
   useEffect(() => {
     connectWebSocket()
