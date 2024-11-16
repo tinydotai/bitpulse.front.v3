@@ -11,7 +11,7 @@ import {
   AreaData,
   HistogramData,
 } from 'lightweight-charts'
-import { Wifi, WifiOff, Loader2 } from 'lucide-react'
+import { Wifi, WifiOff, Loader2, ChevronDown } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -50,6 +50,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasData, setHasData] = useState(false)
+  const [showLegend, setShowLegend] = useState(false)
   const isInitialDataFetch = useRef(true)
   const intervalRef = useRef(DEFAULT_INTERVAL)
   const [intervalState, setIntervalState] = useState(DEFAULT_INTERVAL)
@@ -80,7 +81,6 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       const formattedData = formatToChartData(newDataPoint)
       const currentTime = Number(formattedData.time)
 
-      // Skip if this data point is older than our last processed time
       if (lastTimeRef.current !== null && currentTime <= lastTimeRef.current) {
         return
       }
@@ -128,12 +128,21 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       return
     }
 
-    lastTimeRef.current = null // Reset the last time reference
+    lastTimeRef.current = null
     areaSeries.current.setData([])
     buyVolumeSeries.current.setData([])
     sellVolumeSeries.current.setData([])
     setHasData(false)
     setIsLoading(true)
+  }, [])
+
+  const handleResize = useCallback(() => {
+    if (chart.current && chartContainerRef.current) {
+      const newWidth = chartContainerRef.current.clientWidth
+      const newHeight = Math.max(300, window.innerHeight * 0.5) // Responsive height
+      chart.current.resize(newWidth, newHeight)
+      chart.current.timeScale().fitContent()
+    }
   }, [])
 
   const heartbeat = useCallback(() => {
@@ -174,7 +183,6 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       if (message.type === 'pong') {
         heartbeat()
       } else if (Array.isArray(message) && message.length > 0) {
-        // Sort messages by timestamp before processing
         const sortedMessages = [...message].sort(
           (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         )
@@ -194,7 +202,6 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       isInitialDataFetch.current = false
     }
 
-    // Set a timeout for loading state
     const loadingTimeout = setTimeout(() => {
       setIsLoading(false)
       isInitialDataFetch.current = false
@@ -206,10 +213,16 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   const initChart = useCallback(() => {
     if (!chartContainerRef.current) return
 
+    const containerWidth = chartContainerRef.current.clientWidth
+    const containerHeight = Math.max(300, window.innerHeight * 0.5)
+
     chart.current = createChart(chartContainerRef.current, {
+      width: containerWidth,
+      height: containerHeight,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#888888',
+        fontSize: 12,
       },
       grid: {
         vertLines: { color: '#2d3748' },
@@ -221,6 +234,10 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
       rightPriceScale: {
         borderColor: '#2d3748',
         visible: true,
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.3,
+        },
       },
       leftPriceScale: {
         borderColor: '#2d3748',
@@ -292,7 +309,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     if (INTERVALS.includes(parsedInterval)) {
       intervalRef.current = parsedInterval
       setIntervalState(parsedInterval)
-      setIsLoading(true) // Set loading state when changing interval
+      setIsLoading(true)
       clearChartData()
       connectWebSocket()
     }
@@ -301,6 +318,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
   useEffect(() => {
     initChart()
     connectWebSocket()
+    window.addEventListener('resize', handleResize)
 
     pingInterval.current = setInterval(() => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -309,65 +327,71 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
     }, 3000)
 
     return () => {
+      window.removeEventListener('resize', handleResize)
       if (pingInterval.current) clearInterval(pingInterval.current)
       if (pingTimeout.current) clearTimeout(pingTimeout.current)
       if (ws.current) ws.current.close()
       if (chart.current) chart.current.remove()
     }
-  }, [connectWebSocket, initChart])
+  }, [connectWebSocket, initChart, handleResize])
 
   return (
     <Card className="w-full bg-background">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <span className="text-2xl font-bold">Buy/Sell Volumes</span>
+      <CardHeader className="space-y-2">
+        <CardTitle className="flex items-center justify-between text-lg">
+          <span>Buy/Sell Volumes</span>
+          <div className="flex items-center space-x-2">
+            {isConnected ? (
+              <Wifi className="text-green-500 w-4 h-4" />
+            ) : (
+              <WifiOff className="text-red-500 w-4 h-4" />
+            )}
             <Select value={intervalState.toString()} onValueChange={handleIntervalChange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="Select interval" />
               </SelectTrigger>
               <SelectContent>
                 {INTERVALS.map(i => (
                   <SelectItem key={i} value={i.toString()}>
-                    {i} second{i !== 1 ? 's' : ''}
+                    {i}s
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <span className="text-sm text-muted-foreground">
-              Limited data available -
-              <button className="text-primary hover:underline ml-1">upgrade to premium</button>
-            </span>
           </div>
-          <span className="text-sm font-normal">
-            {isConnected ? (
-              <Wifi className="inline-block text-green-500 w-4 h-4 mr-1" />
-            ) : (
-              <WifiOff className="inline-block text-red-500 w-4 h-4 mr-1" />
-            )}
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </span>
         </CardTitle>
+        <div className="text-sm text-muted-foreground flex items-center justify-between">
+          <span>Limited data available</span>
+          <button className="text-primary hover:underline">upgrade to premium</button>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <div className="flex items-center justify-end space-x-4 text-sm">
+        <div
+          className="relative mb-2 flex items-center justify-center"
+          onClick={() => setShowLegend(!showLegend)}
+        >
+          <div
+            className={`flex flex-col items-start space-y-2 text-sm ${showLegend ? '' : 'hidden'}`}
+          >
             <div className="flex items-center">
               <div className="w-3 h-3 bg-[#26a69a] rounded-sm mr-2" />
-              <span>Total Buy Value</span>
+              <span>Buy Volume</span>
             </div>
             <div className="flex items-center">
               <div className="w-3 h-3 bg-[#ef5350] rounded-sm mr-2" />
-              <span>Total Sell Value</span>
+              <span>Sell Volume</span>
             </div>
             <div className="flex items-center">
               <div className="w-3 h-3 bg-[#4299e1] rounded-sm mr-2" />
               <span>Price</span>
             </div>
           </div>
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${showLegend ? 'rotate-180' : ''}`}
+          />
         </div>
         <div className="relative">
-          <div ref={chartContainerRef} className="w-full h-[420px]" />
+          <div ref={chartContainerRef} className="w-full" />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -375,7 +399,7 @@ export default function LiveCryptoLineChartComponent({ cryptoPair, source }: Liv
           )}
           {!isLoading && !hasData && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-muted-foreground">Loading...</p>
+              <p className="text-muted-foreground">No data available</p>
             </div>
           )}
         </div>
