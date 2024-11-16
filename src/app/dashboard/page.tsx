@@ -55,34 +55,35 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [sortOption, setSortOption] = useState<SortOption>('market_cap')
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch(`${DOMAIN}/cryptos/data?timezone_str=${timezone}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch data')
+        }
         const data = await response.json()
         setCryptoData(data)
         setFilteredData(prevFiltered => {
-          // Maintain the current filtered and sorted state
           if (searchTerm === '') {
             return sortData(data, sortOption)
           }
           return prevFiltered
         })
+        setError(null)
         setIsLoading(false)
       } catch (error) {
         console.error('Error fetching crypto data:', error)
+        setError('Failed to fetch cryptocurrency data. Please try again later.')
         setIsLoading(false)
       }
     }
 
-    // Initial fetch
     fetchData()
-
-    // Set up polling interval
     const intervalId = setInterval(fetchData, 2000)
-
-    // Cleanup function
     return () => clearInterval(intervalId)
   }, [searchTerm, sortOption, timezone])
 
@@ -111,6 +112,40 @@ export default function Dashboard() {
       default:
         return data
     }
+  }
+
+  const handleImageError = (cryptoId: string) => {
+    setFailedImages(prev => ({
+      ...prev,
+      [cryptoId]: true,
+    }))
+  }
+
+  const renderCryptoIcon = (crypto: CryptoCurrency) => {
+    if (failedImages[crypto.id]) {
+      return (
+        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+          <span className="text-xs font-bold text-blue-600">
+            {crypto.name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )
+    }
+
+    return (
+      <div className="relative w-6 h-6">
+        <Image
+          src={crypto.image}
+          alt={`${crypto.name} logo`}
+          fill
+          className="rounded-full object-cover"
+          sizes="24px"
+          onError={() => handleImageError(crypto.id)}
+          loading="lazy"
+          priority={false}
+        />
+      </div>
+    )
   }
 
   const getMinutesAgo = (timestamp: string) => {
@@ -171,6 +206,20 @@ export default function Dashboard() {
     }
   }
 
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <div className="text-red-500 mb-4">{error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Crypto Dashboard</h1>
@@ -220,23 +269,7 @@ export default function Dashboard() {
                     <Card className="hover:shadow-lg transition-shadow duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center space-x-2">
-                          <div className="relative w-6 h-6">
-                            <Image
-                              src={crypto.image}
-                              alt={`${crypto.name} logo`}
-                              fill
-                              className="rounded-full object-cover"
-                              sizes="24px"
-                              onError={() => {
-                                const fallbackImage = document.getElementById(
-                                  `crypto-image-${crypto.id}`
-                                ) as HTMLImageElement
-                                if (fallbackImage) {
-                                  fallbackImage.src = '/placeholder.svg'
-                                }
-                              }}
-                            />
-                          </div>
+                          {renderCryptoIcon(crypto)}
                           <span className="truncate">{crypto.name}</span>
                         </CardTitle>
                       </CardHeader>
