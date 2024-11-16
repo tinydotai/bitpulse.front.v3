@@ -10,7 +10,6 @@ import {
   Time,
   AreaData,
   HistogramData,
-  SeriesDataItemTypeMap,
 } from 'lightweight-charts'
 import { Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
