@@ -21,10 +21,13 @@ interface PairDisplayProps {
 
 export default function PairDisplay({ pair }: PairDisplayProps) {
   const [source, setSource] = useState('all')
+  // Add a key state to force remount of components
+  const [componentKey, setComponentKey] = useState(0)
 
   const handleSourceChange = (newSource: string) => {
-    console.log(`Changing source to: ${newSource}`)
     setSource(newSource)
+    // Increment the key to force remount of components
+    setComponentKey(prev => prev + 1)
   }
 
   return (
@@ -66,11 +69,19 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
       </div>
 
       <Card className="w-full">
-        <LiveCryptoLineChartComponent cryptoPair={pair} source={source} />
+        <LiveCryptoLineChartComponent
+          key={`chart-${componentKey}`}
+          cryptoPair={pair}
+          source={source}
+        />
       </Card>
 
       <div className="w-full">
-        <BigTransactionsTableComponent cryptoPair={pair} source={source} />
+        <BigTransactionsTableComponent
+          key={`table-${componentKey}`}
+          cryptoPair={pair}
+          source={source}
+        />
       </div>
     </div>
   )
