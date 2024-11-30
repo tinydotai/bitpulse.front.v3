@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { DOMAIN } from '@/app/config'
 
 const SOURCES = ['all', 'binance', 'kucoin']
 const REFRESH_INTERVAL = 1000
@@ -116,7 +117,7 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
 
     try {
       fetchingRef.current = true
-      const response = await fetch(`http://localhost:8000/cryptos/data/${pair}`)
+      const response = await fetch(`${DOMAIN}/cryptos/data/${pair}`)
       if (!response.ok) {
         throw new Error('Failed to fetch data')
       }
@@ -193,16 +194,6 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
                       <div className="text-muted-foreground">Price</div>
                       <div className="font-medium">${formatNumber(displayStats.price)}</div>
                     </div>
-                    <div className="text-sm">
-                      <div className="text-muted-foreground">24h Change</div>
-                      <div
-                        className={`font-medium ${
-                          displayStats.dayChange >= 0 ? 'text-green-500' : 'text-red-500'
-                        }`}
-                      >
-                        {displayStats.dayChange?.toFixed(2) ?? 'N/A'}%
-                      </div>
-                    </div>
                   </div>
                 )
               )}
@@ -254,13 +245,7 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
             source={source}
           />
         </Card>
-        <div className="w-full">
-          <BigTransactionsTableComponent
-            key={`table-${componentKey}`}
-            cryptoPair={pair}
-            source={source}
-          />
-        </div>
+
         {/* Stats Section */}
         {cryptoData && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -351,6 +336,14 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
             </StatsCard>
           </div>
         )}
+
+        <div className="w-full">
+          <BigTransactionsTableComponent
+            key={`table-${componentKey}`}
+            cryptoPair={pair}
+            source={source}
+          />
+        </div>
       </div>
     </TooltipProvider>
   )
