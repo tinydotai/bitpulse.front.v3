@@ -172,8 +172,8 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
                             <Image
                               src={`/brokers/${platform}.png`}
                               alt={platform}
-                              width={17}
-                              height={17}
+                              width={33}
+                              height={33}
                             />
                             <span className="text-sm">
                               $
