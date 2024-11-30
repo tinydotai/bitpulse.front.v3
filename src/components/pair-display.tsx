@@ -35,7 +35,6 @@ interface CryptoData {
       binance?: number
       kucoin?: number
     }
-    market_average: number
     change_24h: number
     timestamp: string
     last_updated: {
@@ -59,33 +58,40 @@ const StatsCard = ({ title, children }: { title: string; children: React.ReactNo
   </Card>
 )
 
+// New function to calculate market average
+const calculateMarketAverage = (prices: { [key: string]: number | undefined }): number => {
+  const validPrices = Object.values(prices).filter(
+    (price): price is number => typeof price === 'number' && !isNaN(price)
+  )
+
+  if (validPrices.length === 0) return 0
+
+  return validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length
+}
+
 const formatNumber = (num: number | null | undefined, decimals = 2) => {
   if (num === null || num === undefined) return 'N/A'
 
   // Handle large numbers
   if (num >= 1_000_000_000) {
-    return `$${(num / 1_000_000_000).toFixed(decimals)}B`
+    return `${(num / 1_000_000_000).toFixed(decimals)}B`
   }
   if (num >= 1_000_000) {
-    return `$${(num / 1_000_000).toFixed(decimals)}M`
+    return `${(num / 1_000_000).toFixed(decimals)}M`
   }
 
   // Handle very small numbers (less than $0.01)
   if (num < 0.01) {
-    // Convert to scientific notation and parse parts
     const [, exponent] = num.toExponential(6).split('e')
     const exp = parseInt(exponent)
 
-    // Format based on how small the number is
     if (exp < -6) {
       return `${num.toExponential(4)}`
     } else {
-      // Show up to 8 decimal places for small numbers
       return `${num.toFixed(Math.min(8, Math.abs(exp) + 2))}`
     }
   }
 
-  // Regular numbers
   return `${num.toLocaleString(undefined, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -152,9 +158,11 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
   const getDisplayStats = () => {
     if (!cryptoData?.calculated_stats) return null
 
+    const marketAverage = calculateMarketAverage(cryptoData.calculated_stats.prices)
+
     if (source === 'all') {
       return {
-        price: cryptoData.calculated_stats.market_average,
+        price: marketAverage,
         dayChange: cryptoData.calculated_stats.change_24h,
         volume: cryptoData.total_volume,
       }
@@ -246,7 +254,6 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
           />
         </Card>
 
-        {/* Stats Section */}
         {cryptoData && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <StatsCard title="Market Statistics">
@@ -329,7 +336,7 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="text-sm font-medium">Market Average</span>
                   <span className="font-medium">
-                    ${formatNumber(cryptoData.calculated_stats.market_average)}
+                    ${formatNumber(calculateMarketAverage(cryptoData.calculated_stats.prices))}
                   </span>
                 </div>
               </div>

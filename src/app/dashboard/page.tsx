@@ -18,14 +18,14 @@ import { DOMAIN } from '../config'
 
 interface CalculatedStats {
   prices: {
-    binance: number
+    binance?: number
+    kucoin?: number
   }
-  market_average: number
-  change_24h: number
   timestamp: string
   last_updated: {
-    binance: string
-    coingecko: string
+    binance?: string
+    kucoin?: string
+    coingecko?: string
   }
   execution_time: number
 }
@@ -37,7 +37,6 @@ interface CryptoCurrency {
   image: string
   current_price: number
   market_cap: number
-  price_change_percentage_24h: number
   timestamp: string
   ath: number
   atl: number
@@ -46,7 +45,17 @@ interface CryptoCurrency {
   calculated_stats: CalculatedStats
 }
 
-type SortOption = 'market_cap' | 'price' | 'name' | '24h_change'
+type SortOption = 'market_cap' | 'price' | 'name'
+
+const calculateMarketAverage = (prices: { [key: string]: number | undefined }): number => {
+  const validPrices = Object.values(prices).filter(
+    (price): price is number => typeof price === 'number' && !isNaN(price)
+  )
+
+  if (validPrices.length === 0) return 0
+
+  return validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length
+}
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -102,13 +111,13 @@ export default function Dashboard() {
       case 'market_cap':
         return [...data].sort((a, b) => b.market_cap - a.market_cap)
       case 'price':
-        return [...data].sort((a, b) => b.current_price - a.current_price)
+        return [...data].sort((a, b) => {
+          const aPrice = calculateMarketAverage(a.calculated_stats.prices)
+          const bPrice = calculateMarketAverage(b.calculated_stats.prices)
+          return bPrice - aPrice
+        })
       case 'name':
         return [...data].sort((a, b) => a.name.localeCompare(b.name))
-      case '24h_change':
-        return [...data].sort(
-          (a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h
-        )
       default:
         return data
     }
@@ -239,7 +248,6 @@ export default function Dashboard() {
             <SelectItem value="market_cap">Market Cap</SelectItem>
             <SelectItem value="price">Price</SelectItem>
             <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="24h_change">24h Change</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -276,25 +284,11 @@ export default function Dashboard() {
                       <CardContent>
                         <div className="space-y-2">
                           <p className="text-sm font-medium">
-                            Price: {formatPrice(crypto.calculated_stats.market_average)}
-                          </p>
-                          <p className="text-sm">
-                            24h Change:{' '}
-                            <span
-                              className={
-                                crypto.calculated_stats.change_24h >= 0
-                                  ? 'text-green-600'
-                                  : 'text-red-600'
-                              }
-                            >
-                              {crypto.calculated_stats.change_24h.toFixed(2)}%
-                            </span>
+                            Price:{' '}
+                            {formatPrice(calculateMarketAverage(crypto.calculated_stats.prices))}
                           </p>
                           <p className="text-sm">
                             Market Cap: {formatMarketCap(crypto.market_cap)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Last Updated: {getMinutesAgo(crypto.timestamp)}
                           </p>
                         </div>
                         <Link

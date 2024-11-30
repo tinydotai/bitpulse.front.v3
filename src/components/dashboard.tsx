@@ -18,14 +18,15 @@ import { DOMAIN } from '@/app/config'
 
 interface CalculatedStats {
   prices: {
-    binance: number
+    binance?: number
+    kucoin?: number
   }
-  market_average: number
   change_24h: number
   timestamp: string
   last_updated: {
-    binance: string
-    coingecko: string
+    binance?: string
+    kucoin?: string
+    coingecko?: string
   }
   execution_time: number
 }
@@ -47,6 +48,17 @@ interface CryptoCurrency {
 }
 
 type SortOption = 'market_cap' | 'price' | 'name' | '24h_change'
+
+// New function to calculate market average
+const calculateMarketAverage = (prices: { [key: string]: number | undefined }): number => {
+  const validPrices = Object.values(prices).filter(
+    (price): price is number => typeof price === 'number' && !isNaN(price)
+  )
+
+  if (validPrices.length === 0) return 0
+
+  return validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length
+}
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -97,7 +109,11 @@ export default function Dashboard() {
       case 'market_cap':
         return [...data].sort((a, b) => b.market_cap - a.market_cap)
       case 'price':
-        return [...data].sort((a, b) => b.current_price - a.current_price)
+        return [...data].sort((a, b) => {
+          const aPrice = calculateMarketAverage(a.calculated_stats.prices)
+          const bPrice = calculateMarketAverage(b.calculated_stats.prices)
+          return bPrice - aPrice
+        })
       case 'name':
         return [...data].sort((a, b) => a.name.localeCompare(b.name))
       case '24h_change':
@@ -229,7 +245,6 @@ export default function Dashboard() {
                               className="rounded-full object-cover"
                               sizes="24px"
                               onError={() => {
-                                // Handle error by setting a data URL placeholder or local placeholder image
                                 const fallbackImage = document.getElementById(
                                   `crypto-image-${crypto.id}`
                                 ) as HTMLImageElement
@@ -245,7 +260,8 @@ export default function Dashboard() {
                       <CardContent>
                         <div className="space-y-2">
                           <p className="text-sm font-medium">
-                            Price: {formatPrice(crypto.calculated_stats.market_average)}
+                            Price:{' '}
+                            {formatPrice(calculateMarketAverage(crypto.calculated_stats.prices))}
                           </p>
                           <p className="text-sm">
                             24h Change:{' '}
@@ -261,9 +277,6 @@ export default function Dashboard() {
                           </p>
                           <p className="text-sm">
                             Market Cap: {formatMarketCap(crypto.market_cap)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Last Updated: {getMinutesAgo(crypto.timestamp)}
                           </p>
                         </div>
                         <button
