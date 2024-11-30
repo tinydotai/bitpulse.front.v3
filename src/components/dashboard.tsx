@@ -125,26 +125,6 @@ export default function Dashboard() {
     }
   }
 
-  const getMinutesAgo = (timestamp: string) => {
-    const now = new Date()
-    const updateTime = new Date(timestamp)
-    const diffInMinutes = Math.floor((now.getTime() - updateTime.getTime()) / (1000 * 60))
-
-    if (diffInMinutes < 1) {
-      return 'Just now'
-    } else if (diffInMinutes === 1) {
-      return '1 minute ago'
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes} minutes ago`
-    } else if (diffInMinutes < 1440) {
-      const hours = Math.floor(diffInMinutes / 60)
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`
-    } else {
-      const days = Math.floor(diffInMinutes / 1440)
-      return `${days} day${days > 1 ? 's' : ''} ago`
-    }
-  }
-
   const formatMarketCap = (marketCap: number) => {
     if (marketCap >= 1e12) {
       return `$${(marketCap / 1e12).toFixed(2)}T`
