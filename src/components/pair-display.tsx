@@ -15,7 +15,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const SOURCES = ['all', 'binance', 'kucoin']
-const REFRESH_INTERVAL = 1000 // Refresh every second
+const REFRESH_INTERVAL = 1000
 
 interface PlatformStats {
   price: number
@@ -51,7 +51,6 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchStats = async () => {
-    // If already fetching, skip this request
     if (fetchingRef.current) return
 
     try {
@@ -69,16 +68,12 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
     } finally {
       fetchingRef.current = false
       setLoading(false)
-
-      // Schedule next fetch only after current one completes
       timeoutRef.current = setTimeout(fetchStats, REFRESH_INTERVAL)
     }
   }
 
   useEffect(() => {
-    fetchStats() // Initial fetch
-
-    // Cleanup function
+    fetchStats()
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
@@ -96,13 +91,12 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
     if (!stats) return null
 
     if (source === 'all') {
+      const binanceStats = stats.platforms.binance
+      const kucoinStats = stats.platforms.kucoin
       return {
         price: stats.average_price,
-        change: stats.platforms.binance?.day_change || stats.platforms.kucoin?.day_change || 0,
-        volume: Object.values(stats.platforms).reduce(
-          (sum, platform) => sum + (platform?.volume || 0),
-          0
-        ),
+        hourChange: binanceStats?.hour_change || kucoinStats?.hour_change || 0,
+        dayChange: binanceStats?.day_change || kucoinStats?.day_change || 0,
       }
     }
 
@@ -110,8 +104,8 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
     return platformStats
       ? {
           price: platformStats.price,
-          change: platformStats.day_change,
-          volume: platformStats.volume,
+          hourChange: platformStats.hour_change,
+          dayChange: platformStats.day_change,
         }
       : null
   }
@@ -126,14 +120,13 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
             <div className="flex flex-col space-y-4">
               <h1 className="text-4xl font-bold">{pair.toUpperCase()}</h1>
 
-              {/* Main stats display */}
               {loading && !stats ? (
                 <div className="text-sm text-muted-foreground">Loading stats...</div>
               ) : error ? (
                 <div className="text-sm text-red-500">{error}</div>
               ) : (
                 displayStats && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="text-sm">
                       <div className="text-muted-foreground">Price</div>
                       <div className="font-medium">
@@ -145,30 +138,29 @@ export default function PairDisplay({ pair }: PairDisplayProps) {
                       </div>
                     </div>
                     <div className="text-sm">
-                      <div className="text-muted-foreground">24h Change</div>
+                      <div className="text-muted-foreground">1h Change</div>
                       <div
                         className={`font-medium ${
-                          displayStats.change >= 0 ? 'text-green-500' : 'text-red-500'
+                          displayStats.hourChange >= 0 ? 'text-green-500' : 'text-red-500'
                         }`}
                       >
-                        {displayStats.change.toFixed(2)}%
+                        {displayStats.hourChange.toFixed(2)}%
                       </div>
                     </div>
                     <div className="text-sm">
-                      <div className="text-muted-foreground">24h Volume</div>
-                      <div className="font-medium">
-                        {displayStats.volume.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}{' '}
-                        {pair}
+                      <div className="text-muted-foreground">24h Change</div>
+                      <div
+                        className={`font-medium ${
+                          displayStats.dayChange >= 0 ? 'text-green-500' : 'text-red-500'
+                        }`}
+                      >
+                        {displayStats.dayChange.toFixed(2)}%
                       </div>
                     </div>
                   </div>
                 )
               )}
 
-              {/* Platform comparison */}
               {stats && source === 'all' && (
                 <div className="mt-4 space-y-2">
                   <div className="text-sm font-medium text-muted-foreground">Platform Prices</div>
