@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { v4 as uuidv4 } from 'uuid'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -17,9 +18,10 @@ export default function ChatInterface({ pair }: { pair: string }) {
   const [isLoading, setIsLoading] = useState(false)
   const [latestCode, setLatestCode] = useState('')
   const [isCodeLoading, setIsCodeLoading] = useState(false)
+  const [isDeploying, setIsDeploying] = useState(false)
+  const [deploymentStatus, setDeploymentStatus] = useState<string | null>(null)
 
   useEffect(() => {
-    // Set initial message about data limitations
     setMessages([
       {
         role: 'assistant',
@@ -76,6 +78,40 @@ export default function ChatInterface({ pair }: { pair: string }) {
     } finally {
       setIsLoading(false)
       setIsCodeLoading(false)
+    }
+  }
+
+  const deployCode = async () => {
+    setIsDeploying(true)
+    setDeploymentStatus(null)
+
+    const botId = uuidv4()
+
+    try {
+      const response = await fetch('https://bitpulse.ge/bot/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          bot_id: botId,
+          code: latestCode,
+          pair: pair,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to deploy code')
+      }
+
+      const data = await response.json()
+      setDeploymentStatus(`Deployment successful! Bot ID: ${botId}`)
+    } catch (error) {
+      console.error('Deployment Error:', error)
+      setDeploymentStatus('Deployment failed. Please try again.')
+    } finally {
+      setIsDeploying(false)
     }
   }
 
@@ -136,14 +172,14 @@ export default function ChatInterface({ pair }: { pair: string }) {
         </div>
 
         {/* Right Window - Code Preview */}
-        <div className="bg-zinc-900/50 rounded-lg overflow-hidden">
-          {isCodeLoading ? (
-            <div className="h-full flex items-center justify-center text-zinc-500">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mr-3"></div>
-              Generating code...
-            </div>
-          ) : latestCode ? (
-            <div className="h-full overflow-y-auto">
+        <div className="bg-zinc-900/50 rounded-lg overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            {isCodeLoading ? (
+              <div className="h-full flex items-center justify-center text-zinc-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mr-3"></div>
+                Generating code...
+              </div>
+            ) : latestCode ? (
               <SyntaxHighlighter
                 language="python"
                 style={oneDark}
@@ -151,15 +187,30 @@ export default function ChatInterface({ pair }: { pair: string }) {
                   margin: 0,
                   padding: '1rem',
                   background: 'transparent',
-                  height: '100%',
                 }}
               >
                 {latestCode}
               </SyntaxHighlighter>
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-zinc-500">
-              Generated code will appear here
+            ) : (
+              <div className="h-full flex items-center justify-center text-zinc-500">
+                Generated code will appear here
+              </div>
+            )}
+          </div>
+          {latestCode && (
+            <div className="p-4 border-t border-zinc-800 flex justify-between items-center">
+              <Button
+                onClick={deployCode}
+                disabled={isDeploying}
+                className="bg-green-600 hover:bg-green-700 text-white px-6"
+              >
+                {isDeploying ? 'Deploying...' : 'Deploy'}
+              </Button>
+              {deploymentStatus && (
+                <span className={deploymentStatus.includes('successful') ? 'text-green-400' : 'text-red-400'}>
+                  {deploymentStatus}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -167,3 +218,4 @@ export default function ChatInterface({ pair }: { pair: string }) {
     </div>
   )
 }
+
