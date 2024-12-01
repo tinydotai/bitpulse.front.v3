@@ -7,7 +7,7 @@ import { AuthButton } from '@/components/auth-button'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard } from 'lucide-react'
+import { LayoutDashboard, BotIcon as Robot } from 'lucide-react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,11 +25,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="min-h-screen bg-background text-foreground">
               <header className="container mx-auto p-4">
                 <div className="flex justify-between items-center">
-                  <div>
+                  <div className="flex items-center space-x-4">
                     <Link href="/dashboard">
                       <Button variant="ghost" className="flex items-center space-x-2">
                         <LayoutDashboard className="h-5 w-5" />
                         <span>Dashboard</span>
+                      </Button>
+                    </Link>
+                    <Link href="/bots">
+                      <Button variant="ghost" className="flex items-center space-x-2">
+                        <Robot className="h-5 w-5" />
+                        <span>Bots</span>
                       </Button>
                     </Link>
                   </div>
@@ -47,3 +53,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
+
