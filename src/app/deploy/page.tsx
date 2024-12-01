@@ -3,11 +3,17 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import Editor from '@monaco-editor/react'
 import { Rocket, Server, Upload, TestTube, Key, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import TradingHistory from '@/components/trading-history'
+import { TradingHistory } from '@/components/trading-history'
 import { v4 as uuidv4 } from 'uuid'
 
 const deploySteps = [
@@ -52,7 +58,7 @@ export default function DeployPage() {
       const response = await fetch('http://localhost:8000/bot/create', {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
+          accept: 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -89,7 +95,7 @@ export default function DeployPage() {
                 <SelectValue placeholder="Select pair" />
               </SelectTrigger>
               <SelectContent>
-                {tradingPairs.map((pair) => (
+                {tradingPairs.map(pair => (
                   <SelectItem key={pair} value={pair}>
                     {pair}
                   </SelectItem>
@@ -97,7 +103,13 @@ export default function DeployPage() {
               </SelectContent>
             </Select>
             <Badge
-              variant={deploymentStatus === 'running' ? 'default' : deploymentStatus === 'error' ? 'destructive' : 'secondary'}
+              variant={
+                deploymentStatus === 'running'
+                  ? 'default'
+                  : deploymentStatus === 'error'
+                  ? 'destructive'
+                  : 'secondary'
+              }
               className="text-sm"
             >
               Status: {deploymentStatus}
@@ -119,7 +131,7 @@ export default function DeployPage() {
             defaultLanguage="python"
             theme="vs-dark"
             value={code}
-            onChange={(value) => setCode(value || '')}
+            onChange={value => setCode(value || '')}
             options={{
               fontSize: 14,
               minimap: { enabled: false },
@@ -144,18 +156,19 @@ export default function DeployPage() {
               <div
                 key={index}
                 className={cn(
-                  "flex items-center space-x-3 transition-opacity duration-300",
-                  index > currentStep && "opacity-50"
+                  'flex items-center space-x-3 transition-opacity duration-300',
+                  index > currentStep && 'opacity-50'
                 )}
               >
-                <step.icon className={cn(
-                  "w-6 h-6",
-                  index <= currentStep ? "text-green-500" : "text-zinc-500"
-                )} />
-                <span className={cn(
-                  "text-sm",
-                  index === currentStep && "font-semibold text-green-500"
-                )}>
+                <step.icon
+                  className={cn(
+                    'w-6 h-6',
+                    index <= currentStep ? 'text-green-500' : 'text-zinc-500'
+                  )}
+                />
+                <span
+                  className={cn('text-sm', index === currentStep && 'font-semibold text-green-500')}
+                >
                   {step.text}
                 </span>
                 {index === currentStep && (
@@ -177,4 +190,3 @@ export default function DeployPage() {
     </div>
   )
 }
-
