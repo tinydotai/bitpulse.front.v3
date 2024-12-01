@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { Send, Rocket } from 'lucide-react'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -17,9 +19,9 @@ export default function ChatInterface({ pair }: { pair: string }) {
   const [isLoading, setIsLoading] = useState(false)
   const [latestCode, setLatestCode] = useState('')
   const [isCodeLoading, setIsCodeLoading] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
-    // Set initial message about data limitations
     setMessages([
       {
         role: 'assistant',
@@ -79,6 +81,12 @@ export default function ChatInterface({ pair }: { pair: string }) {
     }
   }
 
+  const handleDeploy = () => {
+    const encodedCode = encodeURIComponent(latestCode)
+    const deployUrl = `/deploy?code=${encodedCode}`
+    router.push(deployUrl)
+  }
+
   return (
     <div className="space-y-4">
       <div className="bg-amber-950/30 border border-amber-900/30 text-amber-200/90 p-4 rounded-lg text-sm">
@@ -129,6 +137,7 @@ export default function ChatInterface({ pair }: { pair: string }) {
                 disabled={isLoading}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-6"
               >
+                <Send className="w-4 h-4 mr-2" />
                 Send
               </Button>
             </div>
@@ -136,14 +145,14 @@ export default function ChatInterface({ pair }: { pair: string }) {
         </div>
 
         {/* Right Window - Code Preview */}
-        <div className="bg-zinc-900/50 rounded-lg overflow-hidden">
-          {isCodeLoading ? (
-            <div className="h-full flex items-center justify-center text-zinc-500">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mr-3"></div>
-              Generating code...
-            </div>
-          ) : latestCode ? (
-            <div className="h-full overflow-y-auto">
+        <div className="bg-zinc-900/50 rounded-lg overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            {isCodeLoading ? (
+              <div className="h-full flex items-center justify-center text-zinc-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mr-3"></div>
+                Generating code...
+              </div>
+            ) : latestCode ? (
               <SyntaxHighlighter
                 language="python"
                 style={oneDark}
@@ -156,10 +165,21 @@ export default function ChatInterface({ pair }: { pair: string }) {
               >
                 {latestCode}
               </SyntaxHighlighter>
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-zinc-500">
-              Generated code will appear here
+            ) : (
+              <div className="h-full flex items-center justify-center text-zinc-500">
+                Generated code will appear here
+              </div>
+            )}
+          </div>
+          {latestCode && (
+            <div className="p-4 border-t border-zinc-800">
+              <Button
+                onClick={handleDeploy}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                Deploy Code
+              </Button>
             </div>
           )}
         </div>
@@ -167,3 +187,4 @@ export default function ChatInterface({ pair }: { pair: string }) {
     </div>
   )
 }
+
