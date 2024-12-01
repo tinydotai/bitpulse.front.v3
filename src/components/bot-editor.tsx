@@ -5,9 +5,21 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import Editor from '@monaco-editor/react'
-import { Rocket, Server, Upload, TestTube, Key, History } from 'lucide-react'
+import { Rocket, Server, Upload, TestTube, Key, History, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TradingHistory } from '@/components/trading-history'
+import { useRouter } from 'next/navigation'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const deploySteps = [
   { icon: Server, text: 'Initializing servers' },
@@ -28,6 +40,7 @@ export function BotEditor({ botId }: BotEditorProps) {
   const [currentStep, setCurrentStep] = useState(-1)
   const [deploymentStatus, setDeploymentStatus] = useState<'idle' | 'running' | 'error'>('idle')
   const [selectedPair, setSelectedPair] = useState(tradingPairs[0])
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchBotCode() {
@@ -85,6 +98,22 @@ export function BotEditor({ botId }: BotEditorProps) {
     }
   }
 
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/bot/bots/${botId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete bot')
+      }
+
+      router.push('/bots')
+    } catch (error) {
+      console.error('Error deleting bot:', error)
+    }
+  }
+
   if (isLoading && !code) {
     return <div className="text-center">Loading...</div>
   }
@@ -120,6 +149,27 @@ export function BotEditor({ botId }: BotEditorProps) {
             {isLoading ? 'Redeploying...' : 'Redeploy'}
           </Button>
         </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Bot
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your
+                bot and remove its data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="rounded-lg border border-zinc-800 overflow-hidden">
