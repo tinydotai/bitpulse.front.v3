@@ -3,11 +3,10 @@ import ChatInterface from '@/components/chat-interface'
 
 export default function PairPage({ params }: { params: { pair: string } }) {
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <div className="mb-4">
-        <PairDisplay pair={params.pair} />
-      </div>
+    <div className="p-8">
+      <PairDisplay pair={params.pair} />
       <ChatInterface pair={params.pair} />
     </div>
   )
 }
+
